@@ -100,13 +100,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const weekData = req.body;
+      const oldWeek = await storage.getWeek(weekId);
+      if (!oldWeek) {
+        return res.status(404).json({ message: "Week not found" });
+      }
+      
+      // Handle changes to maxAttendees
+      const oldMaxAttendees = oldWeek.maxAttendees;
+      const newMaxAttendees = weekData.maxAttendees !== undefined ? weekData.maxAttendees : oldMaxAttendees;
+      
       const week = await storage.updateWeek(weekId, weekData);
       if (!week) {
         return res.status(404).json({ message: "Week not found" });
       }
       
+      // If maxAttendees has changed, we need to adjust attendees
+      if (newMaxAttendees !== oldMaxAttendees) {
+        // Get all attendees for this week
+        const allAttendees = await storage.getAttendeesByWeek(weekId);
+        
+        // Sort by signup time (oldest first)
+        allAttendees.sort((a, b) => {
+          return new Date(a.signupTime).getTime() - new Date(b.signupTime).getTime();
+        });
+        
+        // Handle capacity decrease
+        if (newMaxAttendees < oldMaxAttendees) {
+          // Move attendees beyond the new max to the waitlist
+          for (let i = 0; i < allAttendees.length; i++) {
+            const attendee = allAttendees[i];
+            const shouldBeWaitlisted = i >= newMaxAttendees;
+            
+            if (!attendee.isWaitlist && shouldBeWaitlisted) {
+              // Move to waitlist
+              await storage.updateAttendee(attendee.id, { isWaitlist: true });
+            }
+          }
+        } 
+        // Handle capacity increase
+        else if (newMaxAttendees > oldMaxAttendees) {
+          // Find all waitlisted attendees
+          const waitlistedAttendees = allAttendees.filter(a => a.isWaitlist);
+          
+          // Count confirmed attendees
+          const confirmedCount = allAttendees.filter(a => !a.isWaitlist).length;
+          
+          // Determine how many spots are available
+          const availableSpots = newMaxAttendees - confirmedCount;
+          
+          // Promote attendees from waitlist to fill available spots
+          for (let i = 0; i < Math.min(availableSpots, waitlistedAttendees.length); i++) {
+            await storage.updateAttendee(waitlistedAttendees[i].id, { isWaitlist: false });
+          }
+        }
+      }
+      
       res.json(week);
     } catch (error) {
+      console.error('Error updating week:', error);
       res.status(500).json({ message: "Failed to update week" });
     }
   });
@@ -297,19 +348,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Week not found" });
       }
 
+      // Check if there are available spots
       const confirmedAttendees = await storage.getConfirmedAttendeesByWeek(weekId);
       if (confirmedAttendees.length >= week.maxAttendees) {
         return res.status(400).json({ message: "No available spots to promote from waitlist" });
       }
 
       // Find the attendee to promote
-      const attendee = await storage.updateAttendee(attendeeId, { isWaitlist: false });
+      const attendee = await storage.getAttendeeById(attendeeId);
       if (!attendee) {
         return res.status(404).json({ message: "Attendee not found" });
       }
       
-      res.json(attendee);
+      // Check if this is an admin operation
+      const isAdminMode = req.query.admin === "true";
+      
+      // If not admin mode, check if this attendee belongs to the current user
+      if (!isAdminMode) {
+        const myAttendeeIds = req.session.myAttendees?.[weekId] || [];
+        if (!myAttendeeIds.includes(attendeeId)) {
+          return res.status(403).json({ 
+            message: "You can only promote yourself from the waitlist",
+            notAuthorized: true
+          });
+        }
+      }
+      
+      // Perform the promotion
+      const updatedAttendee = await storage.updateAttendee(attendeeId, { isWaitlist: false });
+      if (!updatedAttendee) {
+        return res.status(404).json({ message: "Failed to update attendee" });
+      }
+      
+      res.json(updatedAttendee);
     } catch (error) {
+      console.error('Error promoting from waitlist:', error);
       res.status(500).json({ message: "Failed to promote from waitlist" });
     }
   });

@@ -20,6 +20,20 @@ interface SignupFormProps {
   currentCount: number;
 }
 
+interface Attendee {
+  id: number;
+  name: string;
+  signupTime: string;
+  isWaitlist: boolean;
+  isMyAttendee?: boolean;
+}
+
+interface AttendeesData {
+  confirmed: Attendee[];
+  waitlist: Attendee[];
+  maxAttendees: number;
+}
+
 type NotificationType = "success" | "waitlist" | "error" | "already-registered" | null;
 
 export default function SignupForm({ 
@@ -34,7 +48,7 @@ export default function SignupForm({
   const [isWaitlisted, setIsWaitlisted] = useState(false);
   
   // Fetch attendees data to check if user is already registered
-  const { data: attendeesData } = useQuery({
+  const { data: attendeesData } = useQuery<AttendeesData>({
     queryKey: [`/api/weeks/${weekId}/attendees`],
     enabled: !!weekId,
   });
@@ -43,9 +57,10 @@ export default function SignupForm({
   useEffect(() => {
     if (attendeesData) {
       // Check the main list
-      const confirmedUserAttendees = attendeesData.confirmed?.filter((a: any) => a.isMyAttendee) || [];
+      const confirmedUserAttendees = attendeesData.confirmed.filter(a => a.isMyAttendee);
+      
       // Check the waitlist
-      const waitlistUserAttendees = attendeesData.waitlist?.filter((a: any) => a.isMyAttendee) || [];
+      const waitlistUserAttendees = attendeesData.waitlist.filter(a => a.isMyAttendee);
       
       if (confirmedUserAttendees.length > 0) {
         setUserRegistered(true);

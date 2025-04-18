@@ -150,7 +150,10 @@ export default function WaitlistList({
                 </div>
                 {!readOnly && (
                   <div className="flex items-center gap-2">
-                    {hasAvailableSpots && (
+                    {/* Only show promote button if: 
+                        1. There are available spots
+                        2. This is the user's own entry */}
+                    {hasAvailableSpots && person.isMyAttendee && (
                       <button 
                         className="text-green-600 hover:text-green-700"
                         aria-label="Move to confirmed list"
