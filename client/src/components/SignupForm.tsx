@@ -20,7 +20,7 @@ interface SignupFormProps {
   currentCount: number;
 }
 
-type NotificationType = "success" | "waitlist" | "error" | null;
+type NotificationType = "success" | "waitlist" | "error" | "already-registered" | null;
 
 export default function SignupForm({ 
   weekId, 

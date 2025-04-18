@@ -124,9 +124,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Week not found" });
       }
 
+      // Get user's attendees for this game from session
+      const myAttendeeIds = req.session.myAttendees?.[weekId] || [];
+      
       const attendees = await storage.getAttendeesByWeek(weekId);
-      const confirmed = attendees.filter(a => !a.isWaitlist);
-      const waitlist = attendees.filter(a => a.isWaitlist);
+      
+      // Mark attendees that belong to the current session user
+      const attendeesWithOwnership = attendees.map(attendee => ({
+        ...attendee,
+        isMyAttendee: myAttendeeIds.includes(attendee.id)
+      }));
+      
+      const confirmed = attendeesWithOwnership.filter(a => !a.isWaitlist);
+      const waitlist = attendeesWithOwnership.filter(a => a.isWaitlist);
       
       res.json({
         confirmed,

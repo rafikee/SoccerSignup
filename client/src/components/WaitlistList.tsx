@@ -17,6 +17,7 @@ interface Attendee {
   name: string;
   signupTime: string;
   isWaitlist: boolean;
+  isMyAttendee?: boolean;
 }
 
 interface WaitlistListProps {
@@ -152,10 +153,11 @@ export default function WaitlistList({
                       </button>
                     )}
                     <button 
-                      className="text-gray-400 hover:text-red-500"
-                      aria-label="Remove from waitlist"
-                      onClick={() => handleRemoveFromWaitlist(person.id)}
-                      disabled={deleteFromWaitlistMutation.isPending}
+                      className={`${person.isMyAttendee ? 'text-gray-400 hover:text-red-500' : 'text-gray-300 cursor-not-allowed'}`}
+                      aria-label={person.isMyAttendee ? "Remove from waitlist" : "You can only remove your own name"}
+                      title={person.isMyAttendee ? "Remove from waitlist" : "You can only remove your own name"}
+                      onClick={() => person.isMyAttendee && handleRemoveFromWaitlist(person.id)}
+                      disabled={deleteFromWaitlistMutation.isPending || !person.isMyAttendee}
                     >
                       <X className="h-4 w-4" />
                     </button>

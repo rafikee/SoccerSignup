@@ -17,6 +17,7 @@ interface Attendee {
   name: string;
   signupTime: string;
   isWaitlist: boolean;
+  isMyAttendee?: boolean;
 }
 
 interface AttendeesListProps {
@@ -112,10 +113,11 @@ export default function AttendeesList({
                 </div>
                 {!readOnly && (
                   <button 
-                    className="text-gray-400 hover:text-red-500"
-                    aria-label="Remove player"
-                    onClick={() => handleRemoveAttendee(attendee.id)}
-                    disabled={deleteAttendeeMutation.isPending}
+                    className={`${attendee.isMyAttendee ? 'text-gray-400 hover:text-red-500' : 'text-gray-300 cursor-not-allowed'}`}
+                    aria-label={attendee.isMyAttendee ? "Remove player" : "You can only remove your own name"}
+                    title={attendee.isMyAttendee ? "Remove player" : "You can only remove your own name"}
+                    onClick={() => attendee.isMyAttendee && handleRemoveAttendee(attendee.id)}
+                    disabled={deleteAttendeeMutation.isPending || !attendee.isMyAttendee}
                   >
                     <X className="h-4 w-4" />
                   </button>
