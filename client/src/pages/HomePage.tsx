@@ -42,7 +42,7 @@ export default function HomePage() {
     isLoading: isLoadingAttendees,
     isError: isAttendeesError
   } = useQuery({
-    queryKey: ['/api/weeks', activeWeek?.id, 'attendees'],
+    queryKey: [`/api/weeks/${activeWeek?.id}/attendees`],
     enabled: !!activeWeek?.id,
     refetchInterval: 2000, // Poll for updates every 2 seconds
   });
@@ -55,8 +55,8 @@ export default function HomePage() {
       const weekEnd = endOfWeek(now, { weekStartsOn: 0 });
       
       const newWeek = {
-        startDate: weekStart,
-        endDate: weekEnd,
+        startDate: weekStart.toISOString(),
+        endDate: weekEnd.toISOString(),
         maxAttendees: activeWeek?.maxAttendees || 10,
         gameTime: activeWeek?.gameTime || "Sunday, 5:00 PM",
         location: activeWeek?.location || "City Park Fields",
@@ -91,7 +91,7 @@ export default function HomePage() {
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['/api/weeks/active'] });
-      await queryClient.invalidateQueries({ queryKey: ['/api/weeks', activeWeek?.id, 'attendees'] });
+      await queryClient.invalidateQueries({ queryKey: [`/api/weeks/${activeWeek?.id}/attendees`] });
       toast({
         title: "Settings updated",
         description: "Maximum attendees updated successfully",

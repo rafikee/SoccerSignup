@@ -25,7 +25,7 @@ export default function PreviousWeekPage() {
     data: attendeesData,
     isLoading: isLoadingAttendees
   } = useQuery({
-    queryKey: ['/api/weeks', weekId, 'attendees'],
+    queryKey: [`/api/weeks/${weekId}/attendees`],
     enabled: weekId !== null,
   });
 
