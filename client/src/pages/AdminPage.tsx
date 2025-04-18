@@ -5,9 +5,34 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import SettingsCard from "@/components/SettingsCard";
 import AdminAttendeesList from "@/components/AdminAttendeesList";
 import AdminWaitlistList from "@/components/AdminWaitlistList";
+import AdminSignupForm from "@/components/AdminSignupForm";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+
+// Define types for activeWeek and attendeesData
+interface Week {
+  id: number;
+  gameDate: string;
+  maxAttendees: number;
+  isActive: boolean;
+  gameTime: string | null;
+  location: string | null;
+}
+
+interface Attendee {
+  id: number;
+  name: string;
+  signupTime: string;
+  isWaitlist: boolean;
+  isMyAttendee?: boolean;
+}
+
+interface AttendeesData {
+  confirmed: Attendee[];
+  waitlist: Attendee[];
+  maxAttendees: number;
+}
 
 export default function AdminPage() {
   const { toast } = useToast();
@@ -22,7 +47,7 @@ export default function AdminPage() {
     data: activeWeek,
     isLoading,
     isError
-  } = useQuery({
+  } = useQuery<Week>({
     queryKey: ['/api/weeks/active'],
   });
   
@@ -30,7 +55,7 @@ export default function AdminPage() {
   const {
     data: attendeesData,
     isLoading: isLoadingAttendees
-  } = useQuery({
+  } = useQuery<AttendeesData>({
     queryKey: ['/api/weeks', activeWeek?.id, 'attendees'],
     enabled: !!activeWeek?.id,
   });
@@ -278,7 +303,36 @@ export default function AdminPage() {
       {/* Admin Player Management */}
       <div className="mt-8">
         <h2 className="text-2xl font-bold mb-4">Player Management</h2>
-        <p className="mb-6 text-gray-600">As an admin, you can remove any player from the lists below.</p>
+        <p className="mb-6 text-gray-600">As an admin, you can add new players and remove existing ones from the lists below.</p>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          {activeWeek && attendeesData && (
+            <>
+              <div className="md:col-span-1">
+                <AdminSignupForm 
+                  weekId={activeWeek.id} 
+                  maxAttendees={activeWeek.maxAttendees || 10}
+                  currentCount={attendeesData.confirmed?.length || 0}
+                />
+              </div>
+              
+              <div className="md:col-span-2">
+                <div className="bg-white p-6 rounded-lg shadow-md">
+                  <h2 className="text-xl font-semibold mb-4">Player Lists</h2>
+                  <p className="mb-4 text-gray-600">
+                    Current game: <span className="font-medium">{attendeesData.confirmed?.length || 0} / {activeWeek.maxAttendees || 10}</span> players
+                    {attendeesData.waitlist?.length > 0 && (
+                      <> with <span className="font-medium">{attendeesData.waitlist.length}</span> on waitlist</>
+                    )}
+                  </p>
+                  <p className="text-sm text-gray-500 mb-2">
+                    As an admin, you can remove any player by clicking the X button next to their name.
+                  </p>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
         
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {activeWeek && attendeesData && (

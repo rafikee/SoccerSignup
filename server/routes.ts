@@ -160,13 +160,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Week not found" });
       }
       
+      // Check if admin mode is enabled (for admin page)
+      const isAdminMode = req.body.admin === true;
+      
       // Initialize session data if not present
       if (!req.session.myAttendees) {
         req.session.myAttendees = {};
       }
       
-      // Check if user already registered for this game
-      if (req.session.myAttendees[weekId] && req.session.myAttendees[weekId].length > 0) {
+      // If not admin mode, check if user already registered for this game
+      if (!isAdminMode && req.session.myAttendees[weekId] && req.session.myAttendees[weekId].length > 0) {
         return res.status(400).json({ 
           message: "You've already registered for this game",
           alreadyRegistered: true
@@ -190,19 +193,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isWaitlist
       });
       
-      // Store the attendee ID in the user's session
-      if (!req.session.myAttendees[weekId]) {
-        req.session.myAttendees[weekId] = [];
+      // If not admin mode, store the attendee ID in the user's session
+      if (!isAdminMode) {
+        if (!req.session.myAttendees[weekId]) {
+          req.session.myAttendees[weekId] = [];
+        }
+        req.session.myAttendees[weekId].push(attendee.id);
+        
+        // Save the session
+        req.session.save();
       }
-      req.session.myAttendees[weekId].push(attendee.id);
-      
-      // Save the session
-      req.session.save();
       
       res.status(201).json({
         attendee,
         isWaitlist,
-        isMyAttendee: true
+        isMyAttendee: !isAdminMode // Only mark as "my attendee" for normal users
       });
     } catch (error) {
       if (error instanceof z.ZodError) {
