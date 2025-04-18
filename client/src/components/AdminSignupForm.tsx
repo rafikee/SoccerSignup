@@ -11,12 +11,17 @@ interface AdminSignupFormProps {
   currentCount: number;
 }
 
-type NotificationType = "success" | "waitlist" | "error" | "already-registered" | null;
+type NotificationType =
+  | "success"
+  | "waitlist"
+  | "error"
+  | "already-registered"
+  | null;
 
-export default function AdminSignupForm({ 
+export default function AdminSignupForm({
   weekId,
   maxAttendees,
-  currentCount
+  currentCount,
 }: AdminSignupFormProps) {
   const [name, setName] = useState("");
   const [notification, setNotification] = useState<NotificationType>(null);
@@ -25,26 +30,33 @@ export default function AdminSignupForm({
   const signupMutation = useMutation({
     mutationFn: async (playerName: string) => {
       if (!weekId) throw new Error("Week ID is required");
-      return apiRequest('POST', `/api/weeks/${weekId}/attendees`, { 
-        name: playerName, 
-        admin: true  // Add admin flag to bypass session checks
+      return apiRequest("POST", `/api/weeks/${weekId}/attendees`, {
+        name: playerName,
+        admin: true, // Add admin flag to bypass session checks
       });
     },
     onSuccess: async (response) => {
       // Force refetch with the correct query key format
-      await queryClient.invalidateQueries({ queryKey: [`/api/weeks/${weekId}/attendees`] });
-      
+      await queryClient.invalidateQueries({
+        queryKey: [`/api/weeks/${weekId}/attendees`],
+      });
+
       // This is the key fix - immediately refresh the data with the correct query
       setTimeout(async () => {
-        await queryClient.refetchQueries({ queryKey: [`/api/weeks/${weekId}/attendees`] });
+        await queryClient.refetchQueries({
+          queryKey: [`/api/weeks/${weekId}/attendees`],
+        });
       }, 100);
-      
+
       setName("");
-      
+
       try {
         // Parse the response if needed
-        const data = typeof response === 'object' && response.json ? await response.json() : response;
-        
+        const data =
+          typeof response === "object" && response.json
+            ? await response.json()
+            : response;
+
         if (data?.attendee?.isWaitlist) {
           setNotification("waitlist");
           toast({
@@ -69,7 +81,7 @@ export default function AdminSignupForm({
           variant: "default",
         });
       }
-      
+
       setTimeout(() => {
         setNotification(null);
       }, 5000);
@@ -90,24 +102,24 @@ export default function AdminSignupForm({
           variant: "destructive",
         });
       }
-      
+
       setTimeout(() => {
         setNotification(null);
       }, 5000);
-    }
+    },
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
-    
+
     signupMutation.mutate(name);
   };
 
   return (
     <div className="bg-white p-6 rounded-lg shadow-md">
-      <h2 className="text-xl font-semibold mb-4">Add New Player (Admin)</h2>
-      
+      <h2 className="text-xl font-semibold mb-4">Add New Player</h2>
+
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <Input
@@ -121,8 +133,8 @@ export default function AdminSignupForm({
           />
         </div>
 
-        <Button 
-          type="submit" 
+        <Button
+          type="submit"
           className="w-full"
           disabled={!name.trim() || signupMutation.isPending}
         >
@@ -134,19 +146,19 @@ export default function AdminSignupForm({
             Player successfully added to the game!
           </div>
         )}
-        
+
         {notification === "waitlist" && (
           <div className="p-3 bg-amber-100 text-amber-700 text-sm rounded">
             Game is full. Player has been added to the waitlist.
           </div>
         )}
-        
+
         {notification === "already-registered" && (
           <div className="p-3 bg-red-100 text-red-700 text-sm rounded">
             This name is already signed up for this game.
           </div>
         )}
-        
+
         {notification === "error" && (
           <div className="p-3 bg-red-100 text-red-700 text-sm rounded">
             Something went wrong. Please try again.
