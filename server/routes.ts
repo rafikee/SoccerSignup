@@ -75,13 +75,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post(`${apiPrefix}/weeks`, async (req, res) => {
     try {
+      console.log("Creating new week with data:", JSON.stringify(req.body));
       const weekData = insertWeekSchema.parse(req.body);
+      console.log("Parsed week data:", JSON.stringify(weekData));
       const week = await storage.createWeek(weekData);
       res.status(201).json(week);
     } catch (error) {
       if (error instanceof z.ZodError) {
+        console.error("Zod validation error:", error.errors);
         return res.status(400).json({ message: "Invalid week data", errors: error.errors });
       }
+      console.error("Error creating week:", error);
       res.status(500).json({ message: "Failed to create week" });
     }
   });

@@ -29,9 +29,15 @@ export const weeks = pgTable("weeks", {
   location: text("location").default("City Park Fields"),
 });
 
-export const insertWeekSchema = createInsertSchema(weeks).omit({
-  id: true,
-});
+export const insertWeekSchema = createInsertSchema(weeks)
+  .omit({
+    id: true,
+  })
+  .extend({
+    // Accept ISO string dates and convert them to Date objects
+    startDate: z.string().transform((str) => new Date(str)),
+    endDate: z.string().transform((str) => new Date(str)),
+  });
 
 export type InsertWeek = z.infer<typeof insertWeekSchema>;
 export type Week = typeof weeks.$inferSelect;
