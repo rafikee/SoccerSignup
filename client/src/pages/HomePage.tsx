@@ -188,9 +188,9 @@ export default function HomePage() {
       <header className="mb-6">
         <h1 className="text-3xl font-bold text-gray-800 flex items-center">
           <i className="fas fa-futbol mr-3 text-primary"></i>
-          Weekly Soccer Sign-Up
+          Soccer Game Sign-Up
         </h1>
-        <p className="text-gray-600 mt-2">Sign up for our weekly soccer games</p>
+        <p className="text-gray-600 mt-2">Sign up for our soccer games</p>
       </header>
 
       <WeekSelector 
@@ -203,7 +203,7 @@ export default function HomePage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <SettingsCard 
           maxAttendees={activeWeek?.maxAttendees || 10}
-          gameTime={activeWeek?.gameTime || "Sunday, 5:00 PM"}
+          gameTime={activeWeek?.gameTime || "5:00 PM"}
           location={activeWeek?.location || "City Park Fields"} 
           onMaxAttendeesChange={handleMaxAttendeesChange}
           onGameTimeChange={handleGameTimeChange}
@@ -233,6 +233,38 @@ export default function HomePage() {
           />
         </div>
       </div>
+      
+      {/* Date Picker Dialog */}
+      <Dialog open={isDatePickerOpen} onOpenChange={setIsDatePickerOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Select Game Date</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col space-y-4 py-4">
+            <div className="mx-auto">
+              <Calendar
+                mode="single"
+                selected={selectedDate}
+                onSelect={setSelectedDate}
+                className="rounded-md border"
+                disabled={{ before: new Date() }}
+              />
+            </div>
+          </div>
+          <DialogFooter className="flex space-x-2 justify-end">
+            <Button variant="outline" onClick={() => setIsDatePickerOpen(false)}>
+              Cancel
+            </Button>
+            <Button 
+              type="submit" 
+              onClick={handleCreateGameWithDate}
+              disabled={!selectedDate || createWeekMutation.isPending}
+            >
+              {createWeekMutation.isPending ? "Creating..." : "Create Game"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

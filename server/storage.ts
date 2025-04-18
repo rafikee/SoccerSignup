@@ -54,19 +54,14 @@ export class MemStorage implements IStorage {
     this.weekCurrentId = 1;
     this.attendeeCurrentId = 1;
     
-    // Create initial active week when storage is initialized
+    // Create initial active game when storage is initialized
     const now = new Date();
-    const startDate = new Date(now);
-    startDate.setDate(now.getDate() - now.getDay()); // Start of current week (Sunday)
-    const endDate = new Date(startDate);
-    endDate.setDate(startDate.getDate() + 6); // End of week (Saturday)
     
     this.createWeek({
-      startDate,
-      endDate,
+      gameDate: now,
       maxAttendees: 10,
       isActive: true,
-      gameTime: "Sunday, 5:00 PM",
+      gameTime: "5:00 PM",
       location: "City Park Fields"
     });
   }
@@ -92,7 +87,7 @@ export class MemStorage implements IStorage {
   // Week methods
   async getAllWeeks(): Promise<Week[]> {
     return Array.from(this.weeks.values()).sort((a, b) => 
-      new Date(b.startDate).getTime() - new Date(a.startDate).getTime()
+      new Date(b.gameDate).getTime() - new Date(a.gameDate).getTime()
     );
   }
 
