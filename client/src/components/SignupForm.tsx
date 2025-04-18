@@ -38,6 +38,8 @@ export default function SignupForm({
     },
     onSuccess: async (res) => {
       const data = await res.json();
+      
+      // Invalidate all queries related to attendees to ensure lists update
       await queryClient.invalidateQueries({ queryKey: ['/api/weeks', weekId, 'attendees'] });
       
       setNotification(data.isWaitlist ? 'waitlist' : 'success');

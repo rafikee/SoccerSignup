@@ -11,27 +11,57 @@ import { Settings } from "lucide-react";
 
 interface SettingsCardProps {
   maxAttendees: number;
+  gameTime?: string;
+  location?: string;
   onMaxAttendeesChange?: (value: number) => void;
+  onGameTimeChange?: (value: string) => void;
+  onLocationChange?: (value: string) => void;
   isPending?: boolean;
   readOnly?: boolean;
 }
 
 export default function SettingsCard({ 
   maxAttendees, 
+  gameTime = "Sunday, 5:00 PM",
+  location = "City Park Fields",
   onMaxAttendeesChange,
+  onGameTimeChange,
+  onLocationChange,
   isPending = false,
   readOnly = false
 }: SettingsCardProps) {
-  const [value, setValue] = useState(maxAttendees);
+  const [maxValue, setMaxValue] = useState(maxAttendees);
+  const [gameTimeValue, setGameTimeValue] = useState(gameTime);
+  const [locationValue, setLocationValue] = useState(location);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleMaxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = parseInt(e.target.value);
-    setValue(newValue);
+    setMaxValue(newValue);
   };
 
-  const handleBlur = () => {
-    if (value !== maxAttendees && !readOnly && onMaxAttendeesChange) {
-      onMaxAttendeesChange(value);
+  const handleGameTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setGameTimeValue(e.target.value);
+  };
+
+  const handleLocationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setLocationValue(e.target.value);
+  };
+
+  const handleMaxBlur = () => {
+    if (maxValue !== maxAttendees && !readOnly && onMaxAttendeesChange) {
+      onMaxAttendeesChange(maxValue);
+    }
+  };
+
+  const handleGameTimeBlur = () => {
+    if (gameTimeValue !== gameTime && !readOnly && onGameTimeChange) {
+      onGameTimeChange(gameTimeValue);
+    }
+  };
+
+  const handleLocationBlur = () => {
+    if (locationValue !== location && !readOnly && onLocationChange) {
+      onLocationChange(locationValue);
     }
   };
 
@@ -51,10 +81,10 @@ export default function SettingsCard({
           <Input
             type="number"
             id="max-attendees"
-            value={value}
+            value={maxValue}
             min={1}
-            onChange={handleChange}
-            onBlur={handleBlur}
+            onChange={handleMaxChange}
+            onBlur={handleMaxBlur}
             disabled={isPending || readOnly}
             className="w-full"
           />
@@ -63,14 +93,35 @@ export default function SettingsCard({
           </p>
         </div>
 
-        <div className="text-sm text-gray-600 pt-4 border-t border-gray-100">
-          <div className="mb-2">
-            <span className="font-medium">Game Time:</span>
-            <span className="ml-2">Sunday, 5:00 PM</span>
-          </div>
+        <div className="space-y-4 pt-4 border-t border-gray-100">
           <div>
-            <span className="font-medium">Location:</span>
-            <span className="ml-2">City Park Fields</span>
+            <Label htmlFor="game-time" className="block text-sm font-medium mb-1">
+              Game Time
+            </Label>
+            <Input
+              type="text"
+              id="game-time"
+              value={gameTimeValue}
+              onChange={handleGameTimeChange}
+              onBlur={handleGameTimeBlur}
+              disabled={isPending || readOnly}
+              className="w-full"
+            />
+          </div>
+          
+          <div>
+            <Label htmlFor="location" className="block text-sm font-medium mb-1">
+              Location
+            </Label>
+            <Input
+              type="text"
+              id="location"
+              value={locationValue}
+              onChange={handleLocationChange}
+              onBlur={handleLocationBlur}
+              disabled={isPending || readOnly}
+              className="w-full"
+            />
           </div>
         </div>
       </CardContent>

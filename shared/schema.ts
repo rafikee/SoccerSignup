@@ -24,6 +24,8 @@ export const weeks = pgTable("weeks", {
   endDate: timestamp("end_date").notNull(),
   maxAttendees: integer("max_attendees").notNull().default(10),
   isActive: boolean("is_active").notNull().default(true),
+  gameTime: text("game_time").default("Sunday, 5:00 PM"),
+  location: text("location").default("City Park Fields"),
 });
 
 export const insertWeekSchema = createInsertSchema(weeks).omit({

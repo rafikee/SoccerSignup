@@ -59,7 +59,9 @@ export class MemStorage implements IStorage {
       startDate,
       endDate,
       maxAttendees: 10,
-      isActive: true
+      isActive: true,
+      gameTime: "Sunday, 5:00 PM",
+      location: "City Park Fields"
     });
   }
 

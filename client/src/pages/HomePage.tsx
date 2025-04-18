@@ -44,6 +44,7 @@ export default function HomePage() {
   } = useQuery({
     queryKey: ['/api/weeks', activeWeek?.id, 'attendees'],
     enabled: !!activeWeek?.id,
+    refetchInterval: 2000, // Poll for updates every 2 seconds
   });
 
   // Create new week mutation
@@ -57,6 +58,8 @@ export default function HomePage() {
         startDate: weekStart,
         endDate: weekEnd,
         maxAttendees: activeWeek?.maxAttendees || 10,
+        gameTime: activeWeek?.gameTime || "Sunday, 5:00 PM",
+        location: activeWeek?.location || "City Park Fields",
         isActive: true
       };
       
