@@ -49,12 +49,21 @@ export default function AttendeesList({
         variant: "default",
       });
     },
-    onError: () => {
-      toast({
-        title: "Error",
-        description: "Failed to remove player",
-        variant: "destructive",
-      });
+    onError: (error: any) => {
+      // Check if it's an unauthorized error
+      if (error.data && error.data.notAuthorized) {
+        toast({
+          title: "Not Authorized",
+          description: "You can only remove your own name from the list",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to remove player",
+          variant: "destructive",
+        });
+      }
     }
   });
 

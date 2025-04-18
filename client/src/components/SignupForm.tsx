@@ -50,8 +50,19 @@ export default function SignupForm({
         setNotification(null);
       }, 3000);
     },
-    onError: () => {
-      setNotification('error');
+    onError: async (error: any) => {
+      try {
+        // Check if it's a specific error with structured data
+        if (error.data && error.data.alreadyRegistered) {
+          setNotification('already-registered');
+        } else {
+          // Generic error or validation error
+          setNotification('error');
+        }
+      } catch (e) {
+        setNotification('error');
+      }
+      
       setTimeout(() => {
         setNotification(null);
       }, 3000);
@@ -123,6 +134,15 @@ export default function SignupForm({
             <XCircle className="h-4 w-4" />
             <AlertDescription>
               Please enter your name
+            </AlertDescription>
+          </Alert>
+        )}
+        
+        {notification === 'already-registered' && (
+          <Alert variant="destructive" className="mt-3">
+            <XCircle className="h-4 w-4" />
+            <AlertDescription>
+              You've already registered for this game
             </AlertDescription>
           </Alert>
         )}
