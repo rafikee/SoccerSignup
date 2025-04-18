@@ -1,8 +1,23 @@
-import type { Express } from "express";
+import type { Express, Request } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { z } from "zod";
 import { insertAttendeeSchema, insertWeekSchema } from "@shared/schema";
+
+// Extend Express Request to include session data
+declare module 'express-session' {
+  interface SessionData {
+    myAttendees?: Record<number, number[]>; // weekId -> attendeeIds mapping
+  }
+}
+
+// Extended request with session data
+interface SessionRequest extends Request {
+  session: {
+    myAttendees?: Record<number, number[]>;
+    [key: string]: any;
+  };
+}
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Initialize database with an active week if none exists
@@ -131,7 +146,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post(`${apiPrefix}/weeks/:weekId/attendees`, async (req, res) => {
+  app.post(`${apiPrefix}/weeks/:weekId/attendees`, async (req: SessionRequest, res) => {
     try {
       const weekId = parseInt(req.params.weekId);
       if (isNaN(weekId)) {
@@ -141,6 +156,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const week = await storage.getWeek(weekId);
       if (!week) {
         return res.status(404).json({ message: "Week not found" });
+      }
+      
+      // Initialize session data if not present
+      if (!req.session.myAttendees) {
+        req.session.myAttendees = {};
+      }
+      
+      // Check if user already registered for this game
+      if (req.session.myAttendees[weekId] && req.session.myAttendees[weekId].length > 0) {
+        return res.status(400).json({ 
+          message: "You've already registered for this game",
+          alreadyRegistered: true
+        });
       }
 
       // Parse and validate using the attendee schema with extended validation
@@ -160,9 +188,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isWaitlist
       });
       
+      // Store the attendee ID in the user's session
+      if (!req.session.myAttendees[weekId]) {
+        req.session.myAttendees[weekId] = [];
+      }
+      req.session.myAttendees[weekId].push(attendee.id);
+      
+      // Save the session
+      req.session.save();
+      
       res.status(201).json({
         attendee,
-        isWaitlist
+        isWaitlist,
+        isMyAttendee: true
       });
     } catch (error) {
       if (error instanceof z.ZodError) {
