@@ -3,15 +3,16 @@ import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { PlusIcon } from "lucide-react";
 
-interface Week {
+interface Game {
   id: number;
-  startDate: string;
-  endDate: string;
+  gameDate: string;
   isActive: boolean;
+  gameTime: string;
+  location: string;
 }
 
-interface WeekSelectorProps {
-  weeks: Week[];
+interface GameSelectorProps {
+  weeks: Game[];
   activeWeekId?: number;
   onCreateNewWeek: () => void;
   isPending: boolean;
@@ -22,33 +23,32 @@ export default function WeekSelector({
   activeWeekId, 
   onCreateNewWeek,
   isPending
-}: WeekSelectorProps) {
-  // Sort weeks by date (newest first)
-  const sortedWeeks = [...weeks].sort((a, b) => 
-    new Date(b.startDate).getTime() - new Date(a.startDate).getTime()
+}: GameSelectorProps) {
+  // Sort games by date (newest first)
+  const sortedGames = [...weeks].sort((a, b) => 
+    new Date(b.gameDate).getTime() - new Date(a.gameDate).getTime()
   );
 
   return (
     <div className="mb-8 border-b border-gray-200 overflow-x-auto">
       <nav className="flex">
-        {sortedWeeks.map((week) => {
-          const isActive = week.id === activeWeekId;
-          const startDate = new Date(week.startDate);
-          const endDate = new Date(week.endDate);
-          const dateRange = `${format(startDate, 'MMM d')} - ${format(endDate, 'MMM d')}`;
+        {sortedGames.map((game) => {
+          const isActive = game.id === activeWeekId;
+          const gameDay = new Date(game.gameDate);
+          const formattedDate = format(gameDay, 'EEEE, MMM d');
           
           return isActive ? (
             <span 
-              key={week.id}
+              key={game.id}
               className="px-4 py-2 text-sm font-medium text-primary border-b-2 border-primary"
               aria-current="page"
             >
-              Current Week ({dateRange})
+              Today's Game ({formattedDate})
             </span>
           ) : (
-            <Link key={week.id} href={`/week/${week.id}`}>
+            <Link key={game.id} href={`/week/${game.id}`}>
               <a className="px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700">
-                {dateRange}
+                {formattedDate}
               </a>
             </Link>
           );
@@ -62,7 +62,7 @@ export default function WeekSelector({
           disabled={isPending}
         >
           <PlusIcon className="mr-2 h-4 w-4" />
-          New Week
+          New Game
         </Button>
       </nav>
     </div>

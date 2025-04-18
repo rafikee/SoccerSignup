@@ -2,34 +2,40 @@ import {
   users, 
   type User, 
   type InsertUser, 
-  weeks, 
-  type Week, 
-  type InsertWeek, 
+  games, 
+  type Game, 
+  type InsertGame, 
   attendees, 
   type Attendee, 
   type InsertAttendee 
 } from "@shared/schema";
 
+// For backward compatibility
+import {
+  type Week,
+  type InsertWeek,
+} from "@shared/schema";
+
 export interface IStorage {
-  // User methods (unchanged)
+  // User methods 
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
 
-  // Week methods
-  getAllWeeks(): Promise<Week[]>;
-  getWeek(id: number): Promise<Week | undefined>;
-  getActiveWeek(): Promise<Week | undefined>;
-  createWeek(week: InsertWeek): Promise<Week>;
-  updateWeek(id: number, data: Partial<Week>): Promise<Week | undefined>;
+  // Game methods (names kept as weeks for backward compatibility)
+  getAllWeeks(): Promise<Game[]>; // Returns all games
+  getWeek(id: number): Promise<Game | undefined>; // Gets a specific game by ID
+  getActiveWeek(): Promise<Game | undefined>; // Gets the active game
+  createWeek(game: InsertGame): Promise<Game>; // Creates a new game
+  updateWeek(id: number, data: Partial<Game>): Promise<Game | undefined>; // Updates a game
 
   // Attendee methods
-  getAttendeesByWeek(weekId: number): Promise<Attendee[]>;
-  getConfirmedAttendeesByWeek(weekId: number): Promise<Attendee[]>;
-  getWaitlistByWeek(weekId: number): Promise<Attendee[]>;
-  createAttendee(attendee: InsertAttendee): Promise<Attendee>;
-  updateAttendee(id: number, data: Partial<Attendee>): Promise<Attendee | undefined>;
-  deleteAttendee(id: number): Promise<boolean>;
+  getAttendeesByWeek(gameId: number): Promise<Attendee[]>; // Gets all attendees for a game
+  getConfirmedAttendeesByWeek(gameId: number): Promise<Attendee[]>; // Gets confirmed (non-waitlist) attendees
+  getWaitlistByWeek(gameId: number): Promise<Attendee[]>; // Gets waitlisted attendees
+  createAttendee(attendee: InsertAttendee): Promise<Attendee>; // Adds an attendee (auto-determines waitlist status)
+  updateAttendee(id: number, data: Partial<Attendee>): Promise<Attendee | undefined>; // Updates an attendee
+  deleteAttendee(id: number): Promise<boolean>; // Removes an attendee (and promotes from waitlist)
 }
 
 export class MemStorage implements IStorage {

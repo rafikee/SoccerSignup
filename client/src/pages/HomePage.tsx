@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { format, startOfWeek, endOfWeek } from "date-fns";
+import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import WeekSelector from "@/components/WeekSelector";
@@ -8,13 +8,17 @@ import SettingsCard from "@/components/SettingsCard";
 import SignupForm from "@/components/SignupForm";
 import AttendeesList from "@/components/AttendeesList";
 import WaitlistList from "@/components/WaitlistList";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 
-interface Week {
+interface Game {
   id: number;
-  startDate: string;
-  endDate: string;
+  gameDate: string;
   maxAttendees: number;
   isActive: boolean;
+  gameTime: string;
+  location: string;
 }
 
 export default function HomePage() {
@@ -47,37 +51,37 @@ export default function HomePage() {
     refetchInterval: 2000, // Poll for updates every 2 seconds
   });
 
-  // Create new week mutation
+  // State for the date picker dialog
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+  
+  // Create new game mutation
   const createWeekMutation = useMutation({
-    mutationFn: async () => {
-      const now = new Date();
-      const weekStart = startOfWeek(now, { weekStartsOn: 0 });
-      const weekEnd = endOfWeek(now, { weekStartsOn: 0 });
-      
-      const newWeek = {
-        startDate: weekStart.toISOString(),
-        endDate: weekEnd.toISOString(),
+    mutationFn: async (gameDate: Date) => {
+      const newGame = {
+        gameDate: gameDate.toISOString(),
         maxAttendees: activeWeek?.maxAttendees || 10,
-        gameTime: activeWeek?.gameTime || "Sunday, 5:00 PM",
+        gameTime: activeWeek?.gameTime || "5:00 PM",
         location: activeWeek?.location || "City Park Fields",
         isActive: true
       };
       
-      return apiRequest('POST', '/api/weeks', newWeek);
+      return apiRequest('POST', '/api/weeks', newGame);
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['/api/weeks'] });
       await queryClient.invalidateQueries({ queryKey: ['/api/weeks/active'] });
       toast({
         title: "Success",
-        description: "New week created!",
+        description: "New game created!",
         variant: "default",
       });
+      setIsDatePickerOpen(false);
     },
     onError: () => {
       toast({
         title: "Error",
-        description: "Failed to create new week",
+        description: "Failed to create new game",
         variant: "destructive",
       });
     }
@@ -132,9 +136,16 @@ export default function HomePage() {
     }
   });
 
-  // Handle creating a new week
+  // Handle creating a new game
   const handleCreateNewWeek = () => {
-    createWeekMutation.mutate();
+    setIsDatePickerOpen(true);
+  };
+  
+  // Handle game date selection and creation
+  const handleCreateGameWithDate = () => {
+    if (selectedDate) {
+      createWeekMutation.mutate(selectedDate);
+    }
   };
 
   // Handle updating max attendees

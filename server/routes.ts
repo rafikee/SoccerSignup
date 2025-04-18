@@ -9,25 +9,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   try {
     const activeWeek = await storage.getActiveWeek();
     if (!activeWeek) {
-      // Create initial active week
-      const now = new Date();
-      const startDate = new Date(now);
-      startDate.setDate(now.getDate() - now.getDay()); // Start of current week (Sunday)
-      const endDate = new Date(startDate);
-      endDate.setDate(startDate.getDate() + 6); // End of week (Saturday)
+      // Create initial active game for today
+      const gameDate = new Date();
       
       await storage.createWeek({
-        startDate,
-        endDate,
+        gameDate,
         maxAttendees: 10,
         isActive: true,
-        gameTime: "Sunday, 5:00 PM",
+        gameTime: "5:00 PM",
         location: "City Park Fields"
       });
-      console.log("Created initial active week");
+      console.log("Created initial active game");
     }
   } catch (error) {
-    console.error("Failed to initialize active week:", error);
+    console.error("Failed to initialize active game:", error);
   }
 
   // API prefix for all routes

@@ -1,11 +1,14 @@
-import { eq, desc, and } from "drizzle-orm";
+import { eq, desc, and, sql } from "drizzle-orm";
 import { db } from "./db";
 import { IStorage } from "./storage";
 import { 
   users, type User, type InsertUser,
-  weeks, type Week, type InsertWeek,
+  games, type Game, type InsertGame,
   attendees, type Attendee, type InsertAttendee
 } from "@shared/schema";
+
+// For backward compatibility
+import { weeks, type Week, type InsertWeek } from "@shared/schema";
 
 export class DatabaseStorage implements IStorage {
   // User methods
@@ -27,55 +30,55 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  // Week methods
+  // Game methods (renamed from Week)
   async getAllWeeks(): Promise<Week[]> {
     return db
       .select()
-      .from(weeks)
-      .orderBy(desc(weeks.startDate));
+      .from(games)
+      .orderBy(desc(games.gameDate));
   }
 
   async getWeek(id: number): Promise<Week | undefined> {
-    const [week] = await db.select().from(weeks).where(eq(weeks.id, id));
-    return week || undefined;
+    const [game] = await db.select().from(games).where(eq(games.id, id));
+    return game || undefined;
   }
 
   async getActiveWeek(): Promise<Week | undefined> {
-    const [week] = await db.select().from(weeks).where(eq(weeks.isActive, true));
-    return week || undefined;
+    const [game] = await db.select().from(games).where(eq(games.isActive, true));
+    return game || undefined;
   }
 
   async createWeek(insertWeek: InsertWeek): Promise<Week> {
-    // Set all existing weeks to inactive when creating a new active week
+    // Set all existing games to inactive when creating a new active game
     if (insertWeek.isActive) {
       await db
-        .update(weeks)
+        .update(games)
         .set({ isActive: false })
-        .where(eq(weeks.isActive, true));
+        .where(eq(games.isActive, true));
     }
 
-    const [week] = await db
-      .insert(weeks)
+    const [game] = await db
+      .insert(games)
       .values(insertWeek)
       .returning();
-    return week;
+    return game;
   }
 
   async updateWeek(id: number, data: Partial<Week>): Promise<Week | undefined> {
-    // If setting this week to active, set all others to inactive
+    // If setting this game to active, set all others to inactive
     if (data.isActive) {
       await db
-        .update(weeks)
+        .update(games)
         .set({ isActive: false })
-        .where(eq(weeks.isActive, true));
+        .where(and(eq(games.isActive, true), sql`${games.id} != ${id}`));
     }
 
-    const [week] = await db
-      .update(weeks)
+    const [game] = await db
+      .update(games)
       .set(data)
-      .where(eq(weeks.id, id))
+      .where(eq(games.id, id))
       .returning();
-    return week || undefined;
+    return game || undefined;
   }
 
   // Attendee methods
@@ -139,10 +142,40 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteAttendee(id: number): Promise<boolean> {
+    // Get the attendee before deleting to determine if we need to promote from waitlist
+    const [attendeeToDelete] = await db
+      .select()
+      .from(attendees)
+      .where(eq(attendees.id, id));
+    
+    if (attendeeToDelete && !attendeeToDelete.isWaitlist) {
+      // This is a confirmed attendee, so promote the first person from waitlist
+      const gameId = attendeeToDelete.weekId;
+      const [nextInWaitlist] = await db
+        .select()
+        .from(attendees)
+        .where(and(
+          eq(attendees.weekId, gameId),
+          eq(attendees.isWaitlist, true)
+        ))
+        .orderBy(attendees.signupTime)
+        .limit(1);
+      
+      // If there's someone on the waitlist, promote them
+      if (nextInWaitlist) {
+        await db
+          .update(attendees)
+          .set({ isWaitlist: false })
+          .where(eq(attendees.id, nextInWaitlist.id));
+      }
+    }
+    
+    // Now delete the attendee
     const [deleted] = await db
       .delete(attendees)
       .where(eq(attendees.id, id))
       .returning();
+    
     return !!deleted;
   }
 }
