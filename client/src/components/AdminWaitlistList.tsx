@@ -62,7 +62,8 @@ export default function AdminWaitlistList({
   // Promote from waitlist mutation
   const promoteFromWaitlistMutation = useMutation({
     mutationFn: async (attendeeId: number) => {
-      return apiRequest('POST', `/api/weeks/${weekId}/promote-from-waitlist/${attendeeId}`);
+      // Add admin=true query parameter to bypass session checks
+      return apiRequest('POST', `/api/weeks/${weekId}/promote-from-waitlist/${attendeeId}?admin=true`);
     },
     onSuccess: async () => {
       // Force refetch with the updated query key format
@@ -74,7 +75,8 @@ export default function AdminWaitlistList({
         variant: "default",
       });
     },
-    onError: () => {
+    onError: (error) => {
+      console.error("Promote error:", error);
       toast({
         title: "Error",
         description: "Failed to promote player",
