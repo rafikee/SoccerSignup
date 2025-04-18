@@ -5,6 +5,31 @@ import { z } from "zod";
 import { insertAttendeeSchema, insertWeekSchema } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Initialize database with an active week if none exists
+  try {
+    const activeWeek = await storage.getActiveWeek();
+    if (!activeWeek) {
+      // Create initial active week
+      const now = new Date();
+      const startDate = new Date(now);
+      startDate.setDate(now.getDate() - now.getDay()); // Start of current week (Sunday)
+      const endDate = new Date(startDate);
+      endDate.setDate(startDate.getDate() + 6); // End of week (Saturday)
+      
+      await storage.createWeek({
+        startDate,
+        endDate,
+        maxAttendees: 10,
+        isActive: true,
+        gameTime: "Sunday, 5:00 PM",
+        location: "City Park Fields"
+      });
+      console.log("Created initial active week");
+    }
+  } catch (error) {
+    console.error("Failed to initialize active week:", error);
+  }
+
   // API prefix for all routes
   const apiPrefix = "/api";
 

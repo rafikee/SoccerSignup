@@ -1,4 +1,4 @@
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and } from "drizzle-orm";
 import { db } from "./db";
 import { IStorage } from "./storage";
 import { 
@@ -91,8 +91,10 @@ export class DatabaseStorage implements IStorage {
     return db
       .select()
       .from(attendees)
-      .where(eq(attendees.weekId, weekId))
-      .where(eq(attendees.isWaitlist, false))
+      .where(and(
+        eq(attendees.weekId, weekId),
+        eq(attendees.isWaitlist, false)
+      ))
       .orderBy(attendees.signupTime);
   }
 
@@ -100,8 +102,10 @@ export class DatabaseStorage implements IStorage {
     return db
       .select()
       .from(attendees)
-      .where(eq(attendees.weekId, weekId))
-      .where(eq(attendees.isWaitlist, true))
+      .where(and(
+        eq(attendees.weekId, weekId),
+        eq(attendees.isWaitlist, true)
+      ))
       .orderBy(attendees.signupTime);
   }
 
