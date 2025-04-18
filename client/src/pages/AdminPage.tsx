@@ -3,12 +3,17 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import SettingsCard from "@/components/SettingsCard";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 
 export default function AdminPage() {
   const { toast } = useToast();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [password, setPassword] = useState("");
   const correctPassword = "mapsfutball";
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
 
   // Fetch active week
   const { 
@@ -66,6 +71,40 @@ export default function AdminPage() {
       });
     }
   });
+  
+  // Create new game mutation
+  const createGameMutation = useMutation({
+    mutationFn: async (gameDate: Date) => {
+      const newGame = {
+        gameDate: gameDate.toISOString(),
+        maxAttendees: activeWeek?.maxAttendees || 10,
+        gameTime: activeWeek?.gameTime || "5:00 PM",
+        location: activeWeek?.location || "City Park Fields",
+        isActive: true
+      };
+      
+      return apiRequest('POST', '/api/weeks', newGame);
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['/api/weeks'] });
+      await queryClient.invalidateQueries({ queryKey: ['/api/weeks/active'] });
+      toast({
+        title: "Success",
+        description: "New game created! It is now the active game.",
+        variant: "default",
+      });
+      setIsDatePickerOpen(false);
+      // Redirect to home page to see the new game
+      window.location.href = '/';
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to create new game",
+        variant: "destructive",
+      });
+    }
+  });
 
   // Handle updating max attendees
   const handleMaxAttendeesChange = (maxAttendees: number) => {
@@ -80,6 +119,18 @@ export default function AdminPage() {
   // Handle updating location
   const handleLocationChange = (location: string) => {
     updateLocationMutation.mutate(location);
+  };
+  
+  // Handle opening the date picker
+  const handleNewGameClick = () => {
+    setIsDatePickerOpen(true);
+  };
+  
+  // Handle creating a new game
+  const handleCreateGameWithDate = () => {
+    if (selectedDate) {
+      createGameMutation.mutate(selectedDate);
+    }
   };
 
   const handleLogin = () => {
@@ -195,14 +246,54 @@ export default function AdminPage() {
         
         <div className="bg-white p-6 rounded-lg shadow-md">
           <h2 className="text-xl font-semibold mb-4">Admin Instructions</h2>
-          <ul className="list-disc pl-5 space-y-2">
+          <ul className="list-disc pl-5 space-y-2 mb-6">
             <li>You can adjust the maximum number of players allowed in the game</li>
             <li>Update the game time as needed</li>
             <li>Change the location for the game</li>
             <li>All changes are immediately visible to users</li>
           </ul>
+          
+          <Button 
+            onClick={handleNewGameClick} 
+            className="w-full bg-primary hover:bg-primary/90"
+            disabled={createGameMutation.isPending}
+          >
+            {createGameMutation.isPending ? "Creating..." : "Create New Game"}
+          </Button>
         </div>
       </div>
+      
+      {/* Date Picker Dialog */}
+      <Dialog open={isDatePickerOpen} onOpenChange={setIsDatePickerOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Select New Game Date</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col space-y-4 py-4">
+            <div className="mx-auto">
+              <Calendar
+                mode="single"
+                selected={selectedDate}
+                onSelect={setSelectedDate}
+                className="rounded-md border"
+                disabled={{ before: new Date() }}
+              />
+            </div>
+          </div>
+          <DialogFooter className="flex space-x-2 justify-end">
+            <Button variant="outline" onClick={() => setIsDatePickerOpen(false)}>
+              Cancel
+            </Button>
+            <Button 
+              type="submit" 
+              onClick={handleCreateGameWithDate}
+              disabled={!selectedDate || createGameMutation.isPending}
+            >
+              {createGameMutation.isPending ? "Creating..." : "Create Game"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
