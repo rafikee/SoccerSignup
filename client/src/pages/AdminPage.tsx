@@ -62,12 +62,15 @@ export default function AdminPage() {
     enabled: !!activeWeek?.id,
     queryFn: async () => {
       if (!activeWeek?.id) throw new Error("No active week");
-      const res = await fetch(`/api/weeks/${activeWeek.id}/attendees`);
+      // Add a cache-busting parameter to ensure we're getting fresh data
+      const cacheBuster = Date.now();
+      const res = await fetch(`/api/weeks/${activeWeek.id}/attendees?_=${cacheBuster}`);
       if (!res.ok) throw new Error("Failed to fetch attendees");
       return res.json();
     },
     staleTime: 0, // Don't use cached data
     refetchOnWindowFocus: true, // Refresh when window gets focus
+    refetchInterval: 2000, // Poll for updates every 2 seconds
   });
   
   // After authentication, fetch attendees right away
@@ -89,7 +92,13 @@ export default function AdminPage() {
       return apiRequest('PATCH', `/api/weeks/${activeWeek.id}`, { maxAttendees });
     },
     onSuccess: async () => {
+      // Invalidate both the active week and the attendees data
       await queryClient.invalidateQueries({ queryKey: ['/api/weeks/active'] });
+      await queryClient.invalidateQueries({ queryKey: [`/api/weeks/${activeWeek?.id}/attendees`] });
+      
+      // Force refetch to get the latest attendees data after waitlist changes
+      refetchAttendees();
+      
       toast({
         title: "Settings updated",
         description: "Maximum attendees updated successfully",
