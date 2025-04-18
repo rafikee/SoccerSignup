@@ -116,7 +116,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // If maxAttendees has changed, we need to adjust attendees
       if (newMaxAttendees !== oldMaxAttendees) {
-        // Get all attendees for this week
+        // Get all attendees for this week, including both confirmed and waitlisted
         const allAttendees = await storage.getAttendeesByWeek(weekId);
         
         // Sort by signup time (oldest first)
@@ -124,17 +124,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return new Date(a.signupTime).getTime() - new Date(b.signupTime).getTime();
         });
         
+        console.log("All attendees sorted by signup time:", 
+          allAttendees.map(a => ({ 
+            id: a.id, 
+            name: a.name, 
+            signupTime: a.signupTime, 
+            isWaitlist: a.isWaitlist 
+          }))
+        );
+        
         // Handle capacity decrease
         if (newMaxAttendees < oldMaxAttendees) {
-          // Move attendees beyond the new max to the waitlist
-          for (let i = 0; i < allAttendees.length; i++) {
-            const attendee = allAttendees[i];
-            const shouldBeWaitlisted = i >= newMaxAttendees;
-            
-            if (!attendee.isWaitlist && shouldBeWaitlisted) {
-              // Move to waitlist
-              await storage.updateAttendee(attendee.id, { isWaitlist: true });
-            }
+          // Get only the confirmed attendees
+          const confirmedAttendees = allAttendees.filter(a => !a.isWaitlist);
+          
+          // Sort confirmed attendees by signup time (newest first)
+          confirmedAttendees.sort((a, b) => {
+            return new Date(b.signupTime).getTime() - new Date(a.signupTime).getTime();
+          });
+          
+          console.log("Confirmed attendees sorted by newest first:", 
+            confirmedAttendees.map(a => ({ 
+              id: a.id, 
+              name: a.name, 
+              signupTime: a.signupTime 
+            }))
+          );
+          
+          // Calculate how many need to be moved to waitlist
+          const numberToWaitlist = Math.max(0, confirmedAttendees.length - newMaxAttendees);
+          
+          // Move the most recently added attendees to the waitlist
+          for (let i = 0; i < numberToWaitlist; i++) {
+            const attendee = confirmedAttendees[i]; // This gets the newest attendees first
+            console.log(`Moving attendee to waitlist: ${attendee.name} (${attendee.signupTime})`);
+            await storage.updateAttendee(attendee.id, { isWaitlist: true });
           }
         } 
         // Handle capacity increase
@@ -142,15 +166,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Find all waitlisted attendees
           const waitlistedAttendees = allAttendees.filter(a => a.isWaitlist);
           
+          // Sort waitlisted attendees by signup time (oldest first)
+          waitlistedAttendees.sort((a, b) => {
+            return new Date(a.signupTime).getTime() - new Date(b.signupTime).getTime();
+          });
+          
+          console.log("Waitlisted attendees sorted by oldest first:", 
+            waitlistedAttendees.map(a => ({ 
+              id: a.id, 
+              name: a.name, 
+              signupTime: a.signupTime 
+            }))
+          );
+          
           // Count confirmed attendees
           const confirmedCount = allAttendees.filter(a => !a.isWaitlist).length;
           
           // Determine how many spots are available
           const availableSpots = newMaxAttendees - confirmedCount;
           
-          // Promote attendees from waitlist to fill available spots
+          // Promote attendees from waitlist to fill available spots, starting with the oldest registrations
           for (let i = 0; i < Math.min(availableSpots, waitlistedAttendees.length); i++) {
-            await storage.updateAttendee(waitlistedAttendees[i].id, { isWaitlist: false });
+            const attendee = waitlistedAttendees[i];
+            console.log(`Promoting attendee from waitlist: ${attendee.name} (${attendee.signupTime})`);
+            await storage.updateAttendee(attendee.id, { isWaitlist: false });
           }
         }
       }
