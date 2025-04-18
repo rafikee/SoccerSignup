@@ -17,29 +17,27 @@ interface Attendee {
   name: string;
   signupTime: string;
   isWaitlist: boolean;
-  isMyAttendee?: boolean;
 }
 
-interface AttendeesListProps {
+interface AdminAttendeesListProps {
   attendees: Attendee[];
   maxAttendees: number;
   weekId: number;
   isLoading?: boolean;
-  readOnly?: boolean;
 }
 
-export default function AttendeesList({ 
+export default function AdminAttendeesList({ 
   attendees, 
   maxAttendees, 
   weekId,
-  isLoading = false,
-  readOnly = false 
-}: AttendeesListProps) {
+  isLoading = false
+}: AdminAttendeesListProps) {
   const { toast } = useToast();
 
   const deleteAttendeeMutation = useMutation({
     mutationFn: async (attendeeId: number) => {
-      return apiRequest('DELETE', `/api/attendees/${attendeeId}`);
+      // Append admin=true query parameter to bypass session checks
+      return apiRequest('DELETE', `/api/attendees/${attendeeId}?admin=true`);
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['/api/weeks', weekId, 'attendees'] });
@@ -50,25 +48,15 @@ export default function AttendeesList({
       });
     },
     onError: (error: any) => {
-      // Check if it's an unauthorized error
-      if (error.data && error.data.notAuthorized) {
-        toast({
-          title: "Not Authorized",
-          description: "You can only remove your own name from the list",
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "Error",
-          description: "Failed to remove player",
-          variant: "destructive",
-        });
-      }
+      toast({
+        title: "Error",
+        description: "Failed to remove player",
+        variant: "destructive",
+      });
     }
   });
 
   const handleRemoveAttendee = (attendeeId: number) => {
-    if (readOnly) return;
     deleteAttendeeMutation.mutate(attendeeId);
   };
 
@@ -120,17 +108,15 @@ export default function AttendeesList({
                     {formatTime(attendee.signupTime)}
                   </span>
                 </div>
-                {!readOnly && attendee.isMyAttendee && (
-                  <button 
-                    className="text-gray-400 hover:text-red-500"
-                    aria-label="Remove player"
-                    title="Remove player"
-                    onClick={() => handleRemoveAttendee(attendee.id)}
-                    disabled={deleteAttendeeMutation.isPending}
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                )}
+                <button 
+                  className="text-gray-400 hover:text-red-500"
+                  aria-label="Remove player"
+                  title="Remove player"
+                  onClick={() => handleRemoveAttendee(attendee.id)}
+                  disabled={deleteAttendeeMutation.isPending}
+                >
+                  <X className="h-4 w-4" />
+                </button>
               </li>
             ))}
           </ul>

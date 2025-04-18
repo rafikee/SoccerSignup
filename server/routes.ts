@@ -244,10 +244,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Attendee not found" });
       }
       
-      // Check if this attendee is in the user's session
-      if (!req.session.myAttendees || 
+      // Check if admin mode is enabled via query parameter (for admin page)
+      const isAdminMode = req.query.admin === "true";
+      
+      // If not in admin mode, check if this attendee is in the user's session
+      if (!isAdminMode && (!req.session.myAttendees || 
           !req.session.myAttendees[attendee.weekId] || 
-          !req.session.myAttendees[attendee.weekId].includes(attendeeId)) {
+          !req.session.myAttendees[attendee.weekId].includes(attendeeId))) {
         return res.status(403).json({ 
           message: "You can only remove your own name from the list",
           notAuthorized: true
@@ -260,9 +263,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Attendee not found" });
       }
       
-      // Remove the attendee from the session
-      req.session.myAttendees[attendee.weekId] = req.session.myAttendees[attendee.weekId].filter(id => id !== attendeeId);
-      req.session.save();
+      // If the deleted attendee was in this user's session, update the session
+      if (req.session.myAttendees && 
+          req.session.myAttendees[attendee.weekId] && 
+          req.session.myAttendees[attendee.weekId].includes(attendeeId)) {
+        req.session.myAttendees[attendee.weekId] = req.session.myAttendees[attendee.weekId].filter(id => id !== attendeeId);
+        req.session.save();
+      }
       
       res.status(204).end();
     } catch (error) {

@@ -3,6 +3,8 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import SettingsCard from "@/components/SettingsCard";
+import AdminAttendeesList from "@/components/AdminAttendeesList";
+import AdminWaitlistList from "@/components/AdminWaitlistList";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -22,6 +24,15 @@ export default function AdminPage() {
     isError
   } = useQuery({
     queryKey: ['/api/weeks/active'],
+  });
+  
+  // Fetch attendees for active week
+  const {
+    data: attendeesData,
+    isLoading: isLoadingAttendees
+  } = useQuery({
+    queryKey: ['/api/weeks', activeWeek?.id, 'attendees'],
+    enabled: !!activeWeek?.id,
   });
 
   // Update max attendees mutation
@@ -250,6 +261,7 @@ export default function AdminPage() {
             <li>You can adjust the maximum number of players allowed in the game</li>
             <li>Update the game time as needed</li>
             <li>Change the location for the game</li>
+            <li>As admin, you can remove any player from the lists below</li>
             <li>All changes are immediately visible to users</li>
           </ul>
           
@@ -260,6 +272,32 @@ export default function AdminPage() {
           >
             {createGameMutation.isPending ? "Creating..." : "Create New Game"}
           </Button>
+        </div>
+      </div>
+      
+      {/* Admin Player Management */}
+      <div className="mt-8">
+        <h2 className="text-2xl font-bold mb-4">Player Management</h2>
+        <p className="mb-6 text-gray-600">As an admin, you can remove any player from the lists below.</p>
+        
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {activeWeek && attendeesData && (
+            <>
+              <AdminAttendeesList 
+                attendees={attendeesData.confirmed || []} 
+                maxAttendees={activeWeek.maxAttendees || 10} 
+                weekId={activeWeek.id}
+                isLoading={isLoadingAttendees}
+              />
+              
+              <AdminWaitlistList 
+                waitlist={attendeesData.waitlist || []} 
+                weekId={activeWeek.id}
+                hasAvailableSpots={(attendeesData.confirmed?.length || 0) < (activeWeek.maxAttendees || 10)}
+                isLoading={isLoadingAttendees}
+              />
+            </>
+          )}
         </div>
       </div>
       

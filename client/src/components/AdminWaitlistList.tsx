@@ -17,30 +17,28 @@ interface Attendee {
   name: string;
   signupTime: string;
   isWaitlist: boolean;
-  isMyAttendee?: boolean;
 }
 
-interface WaitlistListProps {
+interface AdminWaitlistListProps {
   waitlist: Attendee[];
   weekId: number;
   hasAvailableSpots?: boolean;
   isLoading?: boolean;
-  readOnly?: boolean;
 }
 
-export default function WaitlistList({ 
+export default function AdminWaitlistList({ 
   waitlist, 
   weekId,
   hasAvailableSpots = false,
-  isLoading = false, 
-  readOnly = false
-}: WaitlistListProps) {
+  isLoading = false
+}: AdminWaitlistListProps) {
   const { toast } = useToast();
 
   // Delete from waitlist mutation
   const deleteFromWaitlistMutation = useMutation({
     mutationFn: async (attendeeId: number) => {
-      return apiRequest('DELETE', `/api/attendees/${attendeeId}`);
+      // Append admin=true query parameter to bypass session checks
+      return apiRequest('DELETE', `/api/attendees/${attendeeId}?admin=true`);
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['/api/weeks', weekId, 'attendees'] });
@@ -51,20 +49,11 @@ export default function WaitlistList({
       });
     },
     onError: (error: any) => {
-      // Check if it's an unauthorized error
-      if (error.data && error.data.notAuthorized) {
-        toast({
-          title: "Not Authorized",
-          description: "You can only remove your own name from the list",
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "Error",
-          description: "Failed to remove player from waitlist",
-          variant: "destructive",
-        });
-      }
+      toast({
+        title: "Error",
+        description: "Failed to remove player from waitlist",
+        variant: "destructive",
+      });
     }
   });
 
@@ -91,12 +80,11 @@ export default function WaitlistList({
   });
 
   const handleRemoveFromWaitlist = (attendeeId: number) => {
-    if (readOnly) return;
     deleteFromWaitlistMutation.mutate(attendeeId);
   };
 
   const handlePromoteFromWaitlist = (attendeeId: number) => {
-    if (readOnly || !hasAvailableSpots) return;
+    if (!hasAvailableSpots) return;
     promoteFromWaitlistMutation.mutate(attendeeId);
   };
 
@@ -148,32 +136,28 @@ export default function WaitlistList({
                     {formatTime(person.signupTime)}
                   </span>
                 </div>
-                {!readOnly && (
-                  <div className="flex items-center gap-2">
-                    {hasAvailableSpots && (
-                      <button 
-                        className="text-green-600 hover:text-green-700"
-                        aria-label="Move to confirmed list"
-                        title="Move to confirmed list"
-                        onClick={() => handlePromoteFromWaitlist(person.id)}
-                        disabled={promoteFromWaitlistMutation.isPending}
-                      >
-                        <ArrowUp className="h-4 w-4" />
-                      </button>
-                    )}
-                    {person.isMyAttendee && (
-                      <button 
-                        className="text-gray-400 hover:text-red-500"
-                        aria-label="Remove from waitlist"
-                        title="Remove from waitlist"
-                        onClick={() => handleRemoveFromWaitlist(person.id)}
-                        disabled={deleteFromWaitlistMutation.isPending}
-                      >
-                        <X className="h-4 w-4" />
-                      </button>
-                    )}
-                  </div>
-                )}
+                <div className="flex items-center gap-2">
+                  {hasAvailableSpots && (
+                    <button 
+                      className="text-green-600 hover:text-green-700"
+                      aria-label="Move to confirmed list"
+                      title="Move to confirmed list"
+                      onClick={() => handlePromoteFromWaitlist(person.id)}
+                      disabled={promoteFromWaitlistMutation.isPending}
+                    >
+                      <ArrowUp className="h-4 w-4" />
+                    </button>
+                  )}
+                  <button 
+                    className="text-gray-400 hover:text-red-500"
+                    aria-label="Remove from waitlist"
+                    title="Remove from waitlist"
+                    onClick={() => handleRemoveFromWaitlist(person.id)}
+                    disabled={deleteFromWaitlistMutation.isPending}
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
               </li>
             ))}
           </ul>
