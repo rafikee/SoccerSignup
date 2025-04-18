@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
@@ -51,14 +51,36 @@ export default function AdminPage() {
     queryKey: ['/api/weeks/active'],
   });
   
-  // Fetch attendees for active week
+  // Fetch attendees for active week - force a specific URL to avoid caching issues
   const {
     data: attendeesData,
-    isLoading: isLoadingAttendees
+    isLoading: isLoadingAttendees,
+    refetch: refetchAttendees,
+    error: attendeesError
   } = useQuery<AttendeesData>({
-    queryKey: ['/api/weeks', activeWeek?.id, 'attendees'],
+    queryKey: [`/api/weeks/${activeWeek?.id}/attendees`],
     enabled: !!activeWeek?.id,
+    queryFn: async () => {
+      if (!activeWeek?.id) throw new Error("No active week");
+      const res = await fetch(`/api/weeks/${activeWeek.id}/attendees`);
+      if (!res.ok) throw new Error("Failed to fetch attendees");
+      return res.json();
+    },
+    staleTime: 0, // Don't use cached data
+    refetchOnWindowFocus: true, // Refresh when window gets focus
   });
+  
+  // After authentication, fetch attendees right away
+  useEffect(() => {
+    if (isAuthenticated && activeWeek?.id) {
+      refetchAttendees();
+    }
+  }, [isAuthenticated, activeWeek?.id, refetchAttendees]);
+  
+  // Log for debugging
+  console.log('Active Week:', activeWeek);
+  console.log('Attendees Data:', attendeesData);
+  console.log('Attendees Error:', attendeesError);
 
   // Update max attendees mutation
   const updateMaxAttendeesMutation = useMutation({

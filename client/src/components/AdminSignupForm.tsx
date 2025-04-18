@@ -30,12 +30,16 @@ export default function AdminSignupForm({
         admin: true  // Add admin flag to bypass session checks
       });
     },
-    onSuccess: async (data) => {
+    onSuccess: async (response) => {
+      // Force refetch of attendees data
       await queryClient.invalidateQueries({ queryKey: ['/api/weeks', weekId, 'attendees'] });
+      await queryClient.refetchQueries({ queryKey: ['/api/weeks', weekId, 'attendees'] });
       
       setName("");
       
-      if (data.attendee.isWaitlist) {
+      const data = response as any; // Handle the response type
+      
+      if (data?.attendee?.isWaitlist) {
         setNotification("waitlist");
         toast({
           title: "Added to waitlist",
@@ -54,6 +58,8 @@ export default function AdminSignupForm({
       setTimeout(() => {
         setNotification(null);
       }, 5000);
+      
+      console.log("Admin signup successful:", data);
     },
     onError: (error: any) => {
       if (error.data && error.data.alreadyRegistered) {

@@ -40,7 +40,9 @@ export default function AdminAttendeesList({
       return apiRequest('DELETE', `/api/attendees/${attendeeId}?admin=true`);
     },
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['/api/weeks', weekId, 'attendees'] });
+      // Force refetch with the updated query key format
+      await queryClient.invalidateQueries({ queryKey: [`/api/weeks/${weekId}/attendees`] });
+      await queryClient.refetchQueries({ queryKey: [`/api/weeks/${weekId}/attendees`] });
       toast({
         title: "Success",
         description: "Player removed successfully",
