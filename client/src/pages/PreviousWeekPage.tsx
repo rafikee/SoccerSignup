@@ -45,8 +45,8 @@ export default function PreviousWeekPage() {
         <div className="flex items-center justify-center h-screen">
           <div className="text-center">
             <p className="text-lg text-red-500 mb-4">Failed to load week data.</p>
-            <Link href="/">
-              <a className="text-primary hover:underline">Return to current week</a>
+            <Link href="/" className="text-primary hover:underline">
+              Return to current game
             </Link>
           </div>
         </div>
@@ -54,29 +54,26 @@ export default function PreviousWeekPage() {
     );
   }
 
-  const startDate = new Date(week.startDate);
-  const endDate = new Date(week.endDate);
-  const formattedDateRange = `${format(startDate, 'MMM d')} - ${format(endDate, 'MMM d, yyyy')}`;
+  const gameDate = new Date(week.gameDate);
+  const formattedDate = format(gameDate, 'EEEE, MMMM d, yyyy');
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
       <header className="mb-6">
         <h1 className="text-3xl font-bold text-gray-800 flex items-center">
           <i className="fas fa-futbol mr-3 text-primary"></i>
-          Weekly Soccer Sign-Up
+          Soccer Game Sign-Up
         </h1>
-        <p className="text-gray-600 mt-2">Previous week: {formattedDateRange}</p>
+        <p className="text-gray-600 mt-2">Previous game: {formattedDate}</p>
       </header>
 
       <div className="mb-8 border-b border-gray-200 overflow-x-auto">
         <nav className="flex">
-          <Link href="/">
-            <a className="px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700">
-              Return to Current Week
-            </a>
+          <Link href="/" className="px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700">
+            Return to Current Game
           </Link>
           <span className="px-4 py-2 text-sm font-medium text-primary border-b-2 border-primary" aria-current="page">
-            {formattedDateRange}
+            {formattedDate}
           </span>
         </nav>
       </div>
