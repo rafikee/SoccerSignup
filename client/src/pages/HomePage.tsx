@@ -100,6 +100,38 @@ export default function HomePage() {
     }
   });
 
+  // Update game time mutation
+  const updateGameTimeMutation = useMutation({
+    mutationFn: async (gameTime: string) => {
+      if (!activeWeek?.id) throw new Error("No active week");
+      return apiRequest('PATCH', `/api/weeks/${activeWeek.id}`, { gameTime });
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['/api/weeks/active'] });
+      toast({
+        title: "Settings updated",
+        description: "Game time updated successfully",
+        variant: "default",
+      });
+    }
+  });
+
+  // Update location mutation
+  const updateLocationMutation = useMutation({
+    mutationFn: async (location: string) => {
+      if (!activeWeek?.id) throw new Error("No active week");
+      return apiRequest('PATCH', `/api/weeks/${activeWeek.id}`, { location });
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['/api/weeks/active'] });
+      toast({
+        title: "Settings updated",
+        description: "Location updated successfully",
+        variant: "default",
+      });
+    }
+  });
+
   // Handle creating a new week
   const handleCreateNewWeek = () => {
     createWeekMutation.mutate();
@@ -108,6 +140,16 @@ export default function HomePage() {
   // Handle updating max attendees
   const handleMaxAttendeesChange = (maxAttendees: number) => {
     updateMaxAttendeesMutation.mutate(maxAttendees);
+  };
+
+  // Handle updating game time
+  const handleGameTimeChange = (gameTime: string) => {
+    updateGameTimeMutation.mutate(gameTime);
+  };
+
+  // Handle updating location
+  const handleLocationChange = (location: string) => {
+    updateLocationMutation.mutate(location);
   };
 
   if (isLoadingActiveWeek || isLoadingWeeks) {
@@ -149,9 +191,13 @@ export default function HomePage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <SettingsCard 
-          maxAttendees={activeWeek?.maxAttendees || 10} 
+          maxAttendees={activeWeek?.maxAttendees || 10}
+          gameTime={activeWeek?.gameTime || "Sunday, 5:00 PM"}
+          location={activeWeek?.location || "City Park Fields"} 
           onMaxAttendeesChange={handleMaxAttendeesChange}
-          isPending={updateMaxAttendeesMutation.isPending}
+          onGameTimeChange={handleGameTimeChange}
+          onLocationChange={handleLocationChange}
+          isPending={updateMaxAttendeesMutation.isPending || updateGameTimeMutation.isPending || updateLocationMutation.isPending}
         />
 
         <div className="lg:col-span-2">

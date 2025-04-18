@@ -83,7 +83,9 @@ export default function PreviousWeekPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <SettingsCard 
-          maxAttendees={week.maxAttendees} 
+          maxAttendees={week.maxAttendees}
+          gameTime={week.gameTime || "Sunday, 5:00 PM"} 
+          location={week.location || "City Park Fields"}
           readOnly={true}
         />
 
