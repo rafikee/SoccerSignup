@@ -1,7 +1,7 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import SettingsCard from "@/components/SettingsCard";
+import InfoCard from "@/components/InfoCard";
 import SignupForm from "@/components/SignupForm";
 import AttendeesList from "@/components/AttendeesList";
 import WaitlistList from "@/components/WaitlistList";
@@ -135,18 +135,14 @@ export default function HomePage() {
           <i className="fas fa-futbol mr-3 text-primary"></i>
           Soccer Game Sign-Up
         </h1>
-        <p className="text-gray-600 mt-2">Sign up for our soccer game on Friday, April 18, 2025</p>
+        <p className="text-2xl font-bold text-center my-4 text-primary">Friday, April 18, 2025</p>
       </header>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <SettingsCard 
+        <InfoCard 
           maxAttendees={activeWeek?.maxAttendees || 10}
           gameTime={activeWeek?.gameTime || "5:00 PM"}
           location={activeWeek?.location || "City Park Fields"} 
-          onMaxAttendeesChange={handleMaxAttendeesChange}
-          onGameTimeChange={handleGameTimeChange}
-          onLocationChange={handleLocationChange}
-          isPending={updateMaxAttendeesMutation.isPending || updateGameTimeMutation.isPending || updateLocationMutation.isPending}
         />
 
         <div className="lg:col-span-2">
