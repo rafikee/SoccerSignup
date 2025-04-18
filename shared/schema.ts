@@ -1,8 +1,9 @@
 import { pgTable, text, serial, integer, boolean, timestamp } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+import { relations } from "drizzle-orm";
 
-// User schema remains unchanged
+// User model
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
@@ -51,3 +52,15 @@ export const insertAttendeeSchema = createInsertSchema(attendees).omit({
 
 export type InsertAttendee = z.infer<typeof insertAttendeeSchema>;
 export type Attendee = typeof attendees.$inferSelect;
+
+// Set up relations after all tables are defined
+export const weeksRelations = relations(weeks, ({ many }) => ({
+  attendees: many(attendees),
+}));
+
+export const attendeesRelations = relations(attendees, ({ one }) => ({
+  week: one(weeks, {
+    fields: [attendees.weekId],
+    references: [weeks.id],
+  }),
+}));
