@@ -41,7 +41,9 @@ export default function AdminWaitlistList({
       return apiRequest('DELETE', `/api/attendees/${attendeeId}?admin=true`);
     },
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['/api/weeks', weekId, 'attendees'] });
+      // Force refetch with the updated query key format
+      await queryClient.invalidateQueries({ queryKey: [`/api/weeks/${weekId}/attendees`] });
+      await queryClient.refetchQueries({ queryKey: [`/api/weeks/${weekId}/attendees`] });
       toast({
         title: "Success",
         description: "Player removed from waitlist",
@@ -63,7 +65,9 @@ export default function AdminWaitlistList({
       return apiRequest('POST', `/api/weeks/${weekId}/promote-from-waitlist/${attendeeId}`);
     },
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['/api/weeks', weekId, 'attendees'] });
+      // Force refetch with the updated query key format
+      await queryClient.invalidateQueries({ queryKey: [`/api/weeks/${weekId}/attendees`] });
+      await queryClient.refetchQueries({ queryKey: [`/api/weeks/${weekId}/attendees`] });
       toast({
         title: "Success",
         description: "Player promoted to confirmed list",
