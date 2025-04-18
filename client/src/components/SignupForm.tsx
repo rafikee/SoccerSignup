@@ -107,15 +107,16 @@ export default function SignupForm({
             className="flex items-center justify-center"
           >
             <PlusIcon className="mr-2 h-4 w-4" />
-            Add Player
+            Join Game
           </Button>
         </form>
         
         {notification === 'success' && (
           <Alert variant="default" className="mt-3 bg-green-50 text-green-700 border-green-200">
             <CheckCircle className="h-4 w-4" />
-            <AlertDescription>
-              You've been added to the list
+            <AlertDescription className="space-y-2">
+              <p className="font-semibold">You are in this game.</p>
+              <p className="text-sm">If you want to remove yourself from this game you must do it on the same device you registered from. If you have trouble then reach out to an admin in the WhatsApp group. To add plus 1s then also reach out in the WhatsApp group.</p>
             </AlertDescription>
           </Alert>
         )}
@@ -123,8 +124,9 @@ export default function SignupForm({
         {notification === 'waitlist' && (
           <Alert variant="default" className="mt-3 bg-amber-50 text-amber-700 border-amber-200">
             <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              You've been added to the waitlist
+            <AlertDescription className="space-y-2">
+              <p className="font-semibold">You are on the waitlist.</p>
+              <p className="text-sm">You will be automatically added to the game if enough people drop. If you want to remove yourself you must do it on the same device you registered from. If you have trouble then reach out to an admin in the WhatsApp group. To add plus 1s then also reach out in the WhatsApp group.</p>
             </AlertDescription>
           </Alert>
         )}

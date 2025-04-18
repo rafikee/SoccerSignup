@@ -31,26 +31,41 @@ export default function AdminSignupForm({
       });
     },
     onSuccess: async (response) => {
-      // Force refetch of attendees data
-      await queryClient.invalidateQueries({ queryKey: ['/api/weeks', weekId, 'attendees'] });
-      await queryClient.refetchQueries({ queryKey: ['/api/weeks', weekId, 'attendees'] });
+      // Force refetch with the correct query key format
+      await queryClient.invalidateQueries({ queryKey: [`/api/weeks/${weekId}/attendees`] });
+      
+      // This is the key fix - immediately refresh the data with the correct query
+      setTimeout(async () => {
+        await queryClient.refetchQueries({ queryKey: [`/api/weeks/${weekId}/attendees`] });
+      }, 100);
       
       setName("");
       
-      const data = response as any; // Handle the response type
-      
-      if (data?.attendee?.isWaitlist) {
-        setNotification("waitlist");
-        toast({
-          title: "Added to waitlist",
-          description: `${name} has been added to the waitlist`,
-          variant: "default",
-        });
-      } else {
+      try {
+        // Parse the response if needed
+        const data = typeof response === 'object' && response.json ? await response.json() : response;
+        
+        if (data?.attendee?.isWaitlist) {
+          setNotification("waitlist");
+          toast({
+            title: "Added to waitlist",
+            description: `${name} has been added to the waitlist`,
+            variant: "default",
+          });
+        } else {
+          setNotification("success");
+          toast({
+            title: "Success",
+            description: `${name} has been signed up for the game`,
+            variant: "default",
+          });
+        }
+      } catch (err) {
+        // If we can't parse the response, just show generic success
         setNotification("success");
         toast({
           title: "Success",
-          description: `${name} has been signed up for the game`,
+          description: `${name} has been added to the game`,
           variant: "default",
         });
       }
@@ -58,8 +73,6 @@ export default function AdminSignupForm({
       setTimeout(() => {
         setNotification(null);
       }, 5000);
-      
-      console.log("Admin signup successful:", data);
     },
     onError: (error: any) => {
       if (error.data && error.data.alreadyRegistered) {
