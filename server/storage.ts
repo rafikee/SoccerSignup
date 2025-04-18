@@ -33,6 +33,7 @@ export interface IStorage {
   getAttendeesByWeek(gameId: number): Promise<Attendee[]>; // Gets all attendees for a game
   getConfirmedAttendeesByWeek(gameId: number): Promise<Attendee[]>; // Gets confirmed (non-waitlist) attendees
   getWaitlistByWeek(gameId: number): Promise<Attendee[]>; // Gets waitlisted attendees
+  getAttendeeById(id: number): Promise<Attendee | undefined>; // Gets a single attendee by ID
   createAttendee(attendee: InsertAttendee): Promise<Attendee>; // Adds an attendee (auto-determines waitlist status)
   updateAttendee(id: number, data: Partial<Attendee>): Promise<Attendee | undefined>; // Updates an attendee
   deleteAttendee(id: number): Promise<boolean>; // Removes an attendee (and promotes from waitlist)
@@ -150,6 +151,10 @@ export class MemStorage implements IStorage {
     return Array.from(this.attendees.values())
       .filter(a => a.weekId === weekId && a.isWaitlist)
       .sort((a, b) => new Date(a.signupTime).getTime() - new Date(b.signupTime).getTime());
+  }
+  
+  async getAttendeeById(id: number): Promise<Attendee | undefined> {
+    return this.attendees.get(id);
   }
 
   async createAttendee(insertAttendee: InsertAttendee): Promise<Attendee> {

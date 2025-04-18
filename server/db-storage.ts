@@ -111,6 +111,14 @@ export class DatabaseStorage implements IStorage {
       ))
       .orderBy(attendees.signupTime);
   }
+  
+  async getAttendeeById(id: number): Promise<Attendee | undefined> {
+    const [attendee] = await db
+      .select()
+      .from(attendees)
+      .where(eq(attendees.id, id));
+    return attendee || undefined;
+  }
 
   async createAttendee(insertAttendee: InsertAttendee): Promise<Attendee> {
     // Determine if attendee should be on waitlist based on current count and max

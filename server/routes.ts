@@ -1,22 +1,14 @@
 import type { Express, Request } from "express";
 import { createServer, type Server } from "http";
-import { storage } from "./storage";
+import { storage, IStorage } from "./storage";
 import { z } from "zod";
 import { insertAttendeeSchema, insertWeekSchema } from "@shared/schema";
 
-// Extend Express Request to include session data
+// Extend Express Session to include session data
 declare module 'express-session' {
   interface SessionData {
     myAttendees?: Record<number, number[]>; // weekId -> attendeeIds mapping
   }
-}
-
-// Extended request with session data
-interface SessionRequest extends Request {
-  session: {
-    myAttendees?: Record<number, number[]>;
-    [key: string]: any;
-  };
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -146,7 +138,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post(`${apiPrefix}/weeks/:weekId/attendees`, async (req: SessionRequest, res) => {
+  app.post(`${apiPrefix}/weeks/:weekId/attendees`, async (req, res) => {
     try {
       const weekId = parseInt(req.params.weekId);
       if (isNaN(weekId)) {
@@ -235,11 +227,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (isNaN(attendeeId)) {
         return res.status(400).json({ message: "Invalid attendee ID" });
       }
+      
+      // Get the attendee to check which game they belong to
+      const attendee = await storage.getAttendeeById(attendeeId);
+      if (!attendee) {
+        return res.status(404).json({ message: "Attendee not found" });
+      }
+      
+      // Check if this attendee is in the user's session
+      if (!req.session.myAttendees || 
+          !req.session.myAttendees[attendee.weekId] || 
+          !req.session.myAttendees[attendee.weekId].includes(attendeeId)) {
+        return res.status(403).json({ 
+          message: "You can only remove your own name from the list",
+          notAuthorized: true
+        });
+      }
 
+      // Perform the delete
       const deleted = await storage.deleteAttendee(attendeeId);
       if (!deleted) {
         return res.status(404).json({ message: "Attendee not found" });
       }
+      
+      // Remove the attendee from the session
+      req.session.myAttendees[attendee.weekId] = req.session.myAttendees[attendee.weekId].filter(id => id !== attendeeId);
+      req.session.save();
       
       res.status(204).end();
     } catch (error) {
