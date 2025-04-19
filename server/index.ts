@@ -15,14 +15,22 @@ const MemoryStore = memorystore(session);
 app.use(session({
   cookie: { 
     maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
-    secure: process.env.NODE_ENV === 'production'
+    // Don't enforce secure cookies in production since we might not have HTTPS in all environments
+    secure: false,
+    // Allow cookie to work across subdomains
+    domain: process.env.NODE_ENV === 'production' ? '.replit.app' : undefined,
+    // Make the cookie accessible from client-side JS - important for debugging
+    httpOnly: false,
+    // Setting SameSite to lax to allow for cross-site links
+    sameSite: 'lax'
   }, 
   store: new MemoryStore({
     checkPeriod: 86400000 // Prune expired entries every 24h
   }),
   secret: process.env.SESSION_SECRET || 'soccer-attendance-secret',
   resave: false,
-  saveUninitialized: true
+  saveUninitialized: true,
+  name: 'soccer-session' // Use a specific name instead of default connect.sid
 }));
 
 app.use((req, res, next) => {
