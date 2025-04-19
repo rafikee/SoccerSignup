@@ -3,6 +3,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { UserPlus } from "lucide-react";
+import { addAttendeeToStorage, isMyAttendeeInStorage } from "@/lib/utils";
 import { 
   Card, 
   CardContent, 
@@ -55,12 +56,22 @@ export default function SignupForm({
   
   // Check if any attendees for this user are already registered
   useEffect(() => {
-    if (attendeesData) {
-      // Check the main list
-      const confirmedUserAttendees = attendeesData.confirmed.filter(a => a.isMyAttendee);
+    if (attendeesData && weekId) {
+      // Check the main list - both session-based and local storage
+      const confirmedUserAttendees = attendeesData.confirmed.filter(a => 
+        a.isMyAttendee || isMyAttendeeInStorage(weekId, a.id)
+      );
       
-      // Check the waitlist
-      const waitlistUserAttendees = attendeesData.waitlist.filter(a => a.isMyAttendee);
+      // Check the waitlist - both session-based and local storage
+      const waitlistUserAttendees = attendeesData.waitlist.filter(a => 
+        a.isMyAttendee || isMyAttendeeInStorage(weekId, a.id)
+      );
+      
+      // If local storage shows registered attendees, log them
+      if (confirmedUserAttendees.some(a => isMyAttendeeInStorage(weekId, a.id)) || 
+          waitlistUserAttendees.some(a => isMyAttendeeInStorage(weekId, a.id))) {
+        console.log('Found registered attendees in local storage');
+      }
       
       if (confirmedUserAttendees.length > 0) {
         setUserRegistered(true);
@@ -75,7 +86,7 @@ export default function SignupForm({
         setIsWaitlisted(false);
       }
     }
-  }, [attendeesData]);
+  }, [attendeesData, weekId]);
 
   const signupMutation = useMutation({
     mutationFn: async (name: string) => {
@@ -84,6 +95,12 @@ export default function SignupForm({
     },
     onSuccess: async (res) => {
       const data = await res.json();
+      
+      // Store the attendee ID in local storage as a fallback to session
+      if (weekId && data.attendee && data.attendee.id) {
+        addAttendeeToStorage(weekId, data.attendee.id);
+        console.log('Saved attendee to local storage:', weekId, data.attendee.id);
+      }
       
       // Invalidate all queries related to attendees to ensure lists update
       await queryClient.invalidateQueries({ queryKey: [`/api/weeks/${weekId}/attendees`] });
