@@ -2,6 +2,7 @@ import { useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import { isMyAttendeeInStorage, removeAttendeeFromStorage } from "@/lib/utils";
 import { 
   Card, 
   CardContent, 
@@ -42,7 +43,11 @@ export default function WaitlistList({
     mutationFn: async (attendeeId: number) => {
       return apiRequest('DELETE', `/api/attendees/${attendeeId}`);
     },
-    onSuccess: async () => {
+    onSuccess: async (_, attendeeId) => {
+      // Remove from local storage as well
+      removeAttendeeFromStorage(weekId, attendeeId);
+      console.log('Removed attendee from local storage:', weekId, attendeeId);
+      
       await queryClient.invalidateQueries({ queryKey: ['/api/weeks', weekId, 'attendees'] });
       toast({
         title: "Success",
@@ -153,7 +158,7 @@ export default function WaitlistList({
                     {/* Only show promote button if: 
                         1. There are available spots
                         2. This is the user's own entry */}
-                    {hasAvailableSpots && person.isMyAttendee && (
+                    {hasAvailableSpots && (person.isMyAttendee || isMyAttendeeInStorage(weekId, person.id)) && (
                       <button 
                         className="text-green-600 hover:text-green-700"
                         aria-label="Move to confirmed list"
@@ -164,7 +169,7 @@ export default function WaitlistList({
                         <ArrowUp className="h-4 w-4" />
                       </button>
                     )}
-                    {person.isMyAttendee && (
+                    {(person.isMyAttendee || isMyAttendeeInStorage(weekId, person.id)) && (
                       <button 
                         className="text-gray-400 hover:text-red-500"
                         aria-label="Remove from waitlist"

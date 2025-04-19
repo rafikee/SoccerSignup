@@ -42,7 +42,11 @@ export default function AttendeesList({
     mutationFn: async (attendeeId: number) => {
       return apiRequest('DELETE', `/api/attendees/${attendeeId}`);
     },
-    onSuccess: async () => {
+    onSuccess: async (_, attendeeId) => {
+      // Remove from local storage as well
+      removeAttendeeFromStorage(weekId, attendeeId);
+      console.log('Removed attendee from local storage:', weekId, attendeeId);
+      
       await queryClient.invalidateQueries({ queryKey: ['/api/weeks', weekId, 'attendees'] });
       toast({
         title: "Success",
@@ -121,7 +125,7 @@ export default function AttendeesList({
                     {formatTime(attendee.signupTime)}
                   </span>
                 </div>
-                {!readOnly && attendee.isMyAttendee && (
+                {!readOnly && (attendee.isMyAttendee || isMyAttendeeInStorage(weekId, attendee.id)) && (
                   <button 
                     className="text-gray-400 hover:text-red-500"
                     aria-label="Remove player"
