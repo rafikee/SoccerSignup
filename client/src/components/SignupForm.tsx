@@ -163,7 +163,7 @@ export default function SignupForm({
                 <Input
                   type="text"
                   id="name"
-                  placeholder="Enter your name"
+                  placeholder="Enter your name or nickname"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   disabled={signupMutation.isPending}

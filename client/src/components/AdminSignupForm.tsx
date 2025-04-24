@@ -124,7 +124,7 @@ export default function AdminSignupForm({
         <div>
           <Input
             type="text"
-            placeholder="Enter player name"
+            placeholder="Enter player name or nickname"
             value={name}
             onChange={(e) => setName(e.target.value)}
             className="w-full"
