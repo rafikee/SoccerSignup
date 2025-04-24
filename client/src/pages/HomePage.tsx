@@ -5,6 +5,7 @@ import InfoCard from "@/components/InfoCard";
 import SignupForm from "@/components/SignupForm";
 import AttendeesList from "@/components/AttendeesList";
 import WaitlistList from "@/components/WaitlistList";
+import React, { useEffect } from "react";
 
 interface Game {
   id: number;
@@ -22,10 +23,18 @@ export default function HomePage() {
   const { 
     data: activeWeek,
     isLoading: isLoadingActiveWeek,
-    isError: isActiveWeekError
-  } = useQuery({
+    isError: isActiveWeekError,
+    refetch: refetchActiveWeek
+  } = useQuery<Game>({
     queryKey: ['/api/weeks/active'],
+    refetchOnMount: "always", // Always refetch when component mounts
+    staleTime: 0 // Consider data always stale to enable refetching
   });
+  
+  // Effect to refetch on mount - ensuring we have the latest active week
+  useEffect(() => {
+    refetchActiveWeek();
+  }, []);
 
   // No longer need to fetch all weeks since we're only showing the active game
 
@@ -135,7 +144,14 @@ export default function HomePage() {
           <i className="fas fa-futbol mr-3 text-primary"></i>
           Soccer Game Sign-Up
         </h1>
-        <p className="text-2xl font-bold text-center my-4 text-primary">Friday, April 18, 2025</p>
+        <p className="text-2xl font-bold text-center my-4 text-primary">
+          {activeWeek?.gameDate ? new Date(activeWeek.gameDate).toLocaleDateString('en-US', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+          }) : 'Loading...'}
+        </p>
       </header>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
