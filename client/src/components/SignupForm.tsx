@@ -3,7 +3,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { UserPlus } from "lucide-react";
-import { addAttendeeToStorage, isMyAttendeeInStorage } from "@/lib/utils";
+import { addAttendeeToStorage, isMyAttendeeInStorage, getPlayerToken } from "@/lib/utils";
 import { 
   Card, 
   CardContent, 
@@ -91,7 +91,12 @@ export default function SignupForm({
   const signupMutation = useMutation({
     mutationFn: async (name: string) => {
       if (!weekId) throw new Error("No active week");
-      return apiRequest('POST', `/api/weeks/${weekId}/attendees`, { name });
+      // Include the player token with the signup request
+      const playerToken = getPlayerToken();
+      return apiRequest('POST', `/api/weeks/${weekId}/attendees`, { 
+        name,
+        playerToken 
+      });
     },
     onSuccess: async (res) => {
       const data = await res.json();

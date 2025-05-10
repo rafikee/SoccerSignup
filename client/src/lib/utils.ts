@@ -7,6 +7,29 @@ export function cn(...inputs: ClassValue[]) {
 
 // Local storage helpers for tracking user's attendees when session fails
 const ATTENDEES_STORAGE_KEY = 'soccer-my-attendees';
+const PLAYER_TOKEN_KEY = 'soccer-player-token';
+
+// Get player token from localStorage - used to identify the user without sessions
+export function getPlayerToken(): string {
+  try {
+    // Check if a token already exists
+    let token = localStorage.getItem(PLAYER_TOKEN_KEY);
+    
+    // If no token exists, create a new one
+    if (!token) {
+      // Generate a random token
+      token = 'player_' + Math.random().toString(36).substring(2, 15) + 
+              Math.random().toString(36).substring(2, 15);
+      localStorage.setItem(PLAYER_TOKEN_KEY, token);
+    }
+    
+    return token;
+  } catch (e) {
+    console.error('Failed to get player token:', e);
+    // Fallback token if localStorage is not available
+    return 'player_fallback_' + Date.now();
+  }
+}
 
 export function getMyAttendeesFromStorage(): Record<number, number[]> {
   try {
