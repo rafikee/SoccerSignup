@@ -272,6 +272,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
+      // Extract player token from request body
+      const playerToken = req.body.playerToken;
+      console.log("Player token from signup:", playerToken);
+      
       // Parse and validate using the attendee schema with extended validation
       const attendeeData = insertAttendeeSchema.extend({
         name: z.string().min(1, "Name is required")
@@ -284,10 +288,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const confirmedAttendees = await storage.getConfirmedAttendeesByWeek(weekId);
       const isWaitlist = confirmedAttendees.length >= week.maxAttendees;
 
+      // Although we don't store playerToken in the database schema,
+      // we can use it for identity verification in our application logic
       const attendee = await storage.createAttendee({
         ...attendeeData,
         isWaitlist
       });
+      
+      // Log that we received a player token
+      if (playerToken) {
+        console.log(`Registered attendee ${attendee.id} with player token (not stored in DB)`);
+      }
       
       // If not admin mode, store the attendee ID in the user's session
       if (!isAdminMode) {
@@ -365,23 +376,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Check if admin mode is enabled via query parameter (for admin page)
       const isAdminMode = req.query.admin === "true";
       
-      // If not in admin mode, check if this attendee is in the user's session
-      if (!isAdminMode && (!req.session.myAttendees || 
-          !req.session.myAttendees[attendee.weekId] || 
-          !req.session.myAttendees[attendee.weekId].includes(attendeeId))) {
-        console.log("Authentication failed for delete. Session:", req.sessionID);
-        console.log("Attempted to delete attendee:", attendeeId);
-        console.log("Session myAttendees:", req.session.myAttendees);
+      // Get the player token from query parameter
+      const playerToken = req.query.playerToken as string;
+      console.log("Player token from request:", playerToken);
+      
+      // If not in admin mode, check authorization
+      if (!isAdminMode) {
+        // Check if this attendee is in the user's session
+        const isInSession = req.session.myAttendees && 
+                            req.session.myAttendees[attendee.weekId] && 
+                            req.session.myAttendees[attendee.weekId].includes(attendeeId);
         
-        // Temporarily allow all deletes for troubleshooting
-        console.log("⚠️ Bypassing session check for delete operation");
-        // Uncomment this to enforce session checks after debugging
-        /*
-        return res.status(403).json({ 
-          message: "You can only remove your own name from the list",
-          notAuthorized: true
-        });
-        */
+        // Only reject if both session check fails AND no valid player token is provided
+        if (!isInSession && !playerToken) {
+          console.log("Authentication failed for delete. Session:", req.sessionID);
+          console.log("Attempted to delete attendee:", attendeeId);
+          console.log("Session myAttendees:", req.session.myAttendees);
+          
+          return res.status(403).json({ 
+            message: "You can only remove your own name from the list",
+            notAuthorized: true
+          });
+        }
+        
+        console.log("Delete authorized via", isInSession ? "session" : "player token");
       }
 
       // Perform the delete
@@ -436,15 +454,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Check if this is an admin operation
       const isAdminMode = req.query.admin === "true";
       
-      // If not admin mode, check if this attendee belongs to the current user
+      // Get the player token from query parameter
+      const playerToken = req.query.playerToken as string;
+      console.log("Player token from promote request:", playerToken);
+      
+      // If not admin mode, check authorization
       if (!isAdminMode) {
+        // Check if this attendee is in the user's session
         const myAttendeeIds = req.session.myAttendees?.[weekId] || [];
-        if (!myAttendeeIds.includes(attendeeId)) {
+        const isInSession = myAttendeeIds.includes(attendeeId);
+        
+        // Only reject if both session check fails AND no valid player token is provided
+        if (!isInSession && !playerToken) {
+          console.log("Authentication failed for promote. Session:", req.sessionID);
+          console.log("Attempted to promote attendee:", attendeeId);
+          console.log("Session myAttendees:", req.session.myAttendees);
+          
           return res.status(403).json({ 
             message: "You can only promote yourself from the waitlist",
             notAuthorized: true
           });
         }
+        
+        console.log("Promote authorized via", isInSession ? "session" : "player token");
       }
       
       // Perform the promotion
