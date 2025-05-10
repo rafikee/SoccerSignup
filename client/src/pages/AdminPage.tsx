@@ -46,10 +46,18 @@ export default function AdminPage() {
   const { 
     data: activeWeek,
     isLoading,
-    isError
+    isError,
+    refetch: refetchActiveWeek
   } = useQuery<Week>({
     queryKey: ['/api/weeks/active'],
+    refetchOnMount: "always", // Always refetch when component mounts
+    staleTime: 0 // Consider data always stale to enable refetching
   });
+  
+  // Effect to refetch on mount - ensuring we have the latest active week
+  useEffect(() => {
+    refetchActiveWeek();
+  }, []);
   
   // Fetch attendees for active week - force a specific URL to avoid caching issues
   const {
@@ -283,7 +291,14 @@ export default function AdminPage() {
           <i className="fas fa-futbol mr-3 text-primary"></i>
           Admin Settings
         </h1>
-        <p className="text-2xl font-bold text-center my-4 text-primary">Friday, April 18, 2025</p>
+        <p className="text-2xl font-bold text-center my-4 text-primary">
+          {activeWeek?.gameDate ? new Date(activeWeek.gameDate).toLocaleDateString('en-US', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+          }) : 'Loading...'}
+        </p>
       </header>
       
       <div className="mb-6 flex justify-between items-center">
