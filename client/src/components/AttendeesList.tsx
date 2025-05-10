@@ -2,7 +2,7 @@ import { useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
-import { isMyAttendeeInStorage, removeAttendeeFromStorage } from "@/lib/utils";
+import { isMyAttendeeInStorage, removeAttendeeFromStorage, getPlayerToken } from "@/lib/utils";
 import { 
   Card, 
   CardContent, 
@@ -40,7 +40,9 @@ export default function AttendeesList({
 
   const deleteAttendeeMutation = useMutation({
     mutationFn: async (attendeeId: number) => {
-      return apiRequest('DELETE', `/api/attendees/${attendeeId}`);
+      // Include the player token in the URL as a query parameter
+      const playerToken = getPlayerToken();
+      return apiRequest('DELETE', `/api/attendees/${attendeeId}?playerToken=${encodeURIComponent(playerToken)}`);
     },
     onSuccess: async (_, attendeeId) => {
       // Remove from local storage as well
