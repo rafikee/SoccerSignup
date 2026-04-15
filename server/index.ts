@@ -15,12 +15,8 @@ const MemoryStore = memorystore(session);
 app.use(session({
   cookie: { 
     maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
-    // Don't enforce secure cookies in production since we might not have HTTPS in all environments
-    secure: false,
-    // Allow cookie to work across subdomains
-    domain: process.env.NODE_ENV === 'production' ? '.replit.app' : undefined,
-    // Make the cookie accessible from client-side JS - important for debugging
-    httpOnly: false,
+    secure: process.env.NODE_ENV === 'production',
+    httpOnly: true,
     // Setting SameSite to lax to allow for cross-site links
     sameSite: 'lax'
   }, 
