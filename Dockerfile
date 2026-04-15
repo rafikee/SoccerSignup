@@ -1,11 +1,12 @@
 FROM node:20-slim AS builder
 WORKDIR /app
 
+ENV NODE_ENV=development
 COPY package.json package-lock.json ./
 RUN npm ci
 
 COPY . .
-RUN npm run build
+RUN NODE_ENV=production npm run build
 
 FROM node:20-slim
 WORKDIR /app
